@@ -19,30 +19,102 @@ tokens = list(reserved.values()) + [
     'ERROR'
 ]
 
-t_TkOBlock = r'\{'
-t_TkCBlock = r'\}'
-t_TkComma = r','
-t_TkOpenPar = r'\('
-t_TkClosePar = r'\)'
-t_TkAsig = r':='
-t_TkSemicolon = r';'
-t_TkArrow = r'-->'
-t_TkGuard = r'\[\]'
-t_TkPlus = r'\+'
-t_TkMinus = r'-'
-t_TkMult = r'\*'
-t_TkNot = r'!'
-t_TkLess = r'<'
-t_TkLeq = r'<='
-t_TkGeq = r'>='
-t_TkGreater = r'>'
-t_TkEqual = r'=='
-t_TkNEqual = r'<>'
-t_TkOBracket = r'\['
-t_TkCBracket = r'\]'
-t_TkTwoPoints = r':'
-t_TkApp = r'\.'
-t_TkSoForth = r'\.\.'
+def t_TkOBlock(t):
+    r'\{'
+    return t
+
+def t_TkCBlock(t):
+    r'\}'
+    return t
+
+def t_TkComma(t):
+    r','
+    return t
+
+def t_TkOpenPar(t):
+    r'\('
+    return t
+
+def t_TkClosePar(t):
+    r'\)'
+    return t
+
+def t_TkAsig(t):
+    r':='
+    return t
+
+def t_TkSemicolon(t):
+    r';'
+    return t
+
+def t_TkArrow(t):
+    r'-->'
+    return t
+
+def t_TkGuard(t):
+    r'\[\]'
+    return t
+
+def t_TkPlus(t):
+    r'\+'
+    return t
+
+def t_TkMinus(t):
+    r'-'
+    return t
+
+def t_TkMult(t):
+    r'\*'
+    return t
+
+def t_TkNot(t):
+    r'!'
+    return t
+
+def t_TkLeq(t):
+    r'<='
+    return t
+    
+def t_TkLess(t):
+    r'<'
+    return t
+
+
+def t_TkGeq(t):
+    r'>='
+    return t
+
+def t_TkGreater(t):
+    r'>'
+    return t
+
+def t_TkEqual(t):
+    r'=='
+    return t
+
+def t_TkNEqual(t):
+    r'<>'
+    return t
+
+def t_TkOBracket(t):
+    r'\['
+    return t
+
+def t_TkCBracket(t):
+    r'\]'
+    return t
+
+def t_TkTwoPoints(t):
+    r':'
+    return t
+
+def t_TkApp(t):
+    r'\.'
+    return t
+
+def t_TkSoForth(t):
+    r'\.\.'
+    return t
 
 t_ignore = ' \t'
 

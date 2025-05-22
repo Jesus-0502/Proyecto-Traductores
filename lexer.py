@@ -2,6 +2,7 @@ import sys
 import os
 import ply.lex as lex
 from utils import find_column, print_error
+from tokens import *
 
 lexer = lex.lex()
 
@@ -25,7 +26,7 @@ def main():
 
     lexer.input(data)
     has_error = False
-
+    logs = ""
     while True:
         tok = lexer.token()
         if not tok:
@@ -34,10 +35,12 @@ def main():
             print_error(tok.value, tok.lineno, find_column(data, tok))
             has_error = True
         else:
-            print(f"{tok.type}(\"{tok.value}\") {tok.lineno} {find_column(data, tok)}")
+            logs += f"{tok.type} (\"{tok.value}\") {tok.lineno} {find_column(data, tok)}\n"
 
     if has_error:
         sys.exit(1)
+    else:
+        print(logs)
 
 if __name__ == "__main__":
     main()
