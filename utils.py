@@ -4,3 +4,6 @@ def find_column(input_text, token):
         last_cr = -1
     column = token.lexpos - last_cr
     return column
+
+def print_error(char, row, column):
+    print(f"Error: Unexpected character \"{char}\" in row {row}, column {column}")

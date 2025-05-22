@@ -1,7 +1,7 @@
 import sys
 import os
 import ply.lex as lex
-from utils import find_column
+from utils import find_column, print_error
 
 lexer = lex.lex()
 
@@ -33,6 +33,8 @@ def main():
         if tok.type == 'ERROR':
             print_error(tok.value, tok.lineno, find_column(data, tok))
             has_error = True
+        else:
+            print(f"{tok.type}(\"{tok.value}\") {tok.lineno} {find_column(data, tok)}")
 
     if has_error:
         sys.exit(1)
