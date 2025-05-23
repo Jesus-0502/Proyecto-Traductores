@@ -175,10 +175,12 @@ def print_error(char, row, column):
 lexer = lex.lex()
 
 def main():
+    # Chequeamos que la entrada es la correcta
     if len(sys.argv) != 2:
         print("Uso: lexer <archivo.imperat>")
         sys.exit(1)
 
+    # Chequeamos que la terminacion del archivo sea .imperat
     filename = sys.argv[1]
     if not filename.endswith(".imperat"):
         print("Error: el archivo debe tener extensión .imperat")
