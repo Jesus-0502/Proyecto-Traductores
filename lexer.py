@@ -35,8 +35,15 @@ def main():
             print_error(tok.value, tok.lineno, find_column(data, tok))
             has_error = True
         else:
-            logs += f"{tok.type} (\"{tok.value}\") {tok.lineno} {find_column(data, tok)}\n"
-
+            match tok.type:
+                case 'TkNum':
+                    logs += f"{tok.type}({tok.value}) {tok.lineno} {find_column(data, tok)}\n"
+                case 'TkId':
+                    logs += f"{tok.type}(\"{tok.value}\") {tok.lineno} {find_column(data, tok)}\n"
+                case 'TkString':
+                    logs += f"{tok.type}(\"{tok.value}\") {tok.lineno} {find_column(data, tok)}\n"
+                case _:
+                    logs += f"{tok.type} {tok.lineno} {find_column(data, tok)}\n"
     if has_error:
         sys.exit(1)
     else:
