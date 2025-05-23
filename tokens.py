@@ -112,12 +112,12 @@ def t_TkTwoPoints(t):
     r':'
     return t
 
-def t_TkApp(t):
-    r'\.'
-    return t
-
 def t_TkSoForth(t):
     r'\.\.'
+    return t
+
+def t_TkApp(t):
+    r'\.'
     return t
 
 t_ignore = ' \t'
