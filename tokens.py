@@ -8,7 +8,11 @@ reserved = {
     'true': 'TkTrue',
     'false': 'TkFalse',
     'or': 'TkOr',
-    'and': 'TkAnd'
+    'and': 'TkAnd',
+    'fi': 'TkFi',
+    'else': 'TkElse',
+    'bool': 'TkBool',
+    'skip': 'TkSkip'
 }
 
 tokens = list(reserved.values()) + [
