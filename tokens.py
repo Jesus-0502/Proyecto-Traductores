@@ -131,7 +131,8 @@ def t_newline(t):
     t.lexer.lineno += len(t.value)
 
 def t_TkString(t):
-    r'"([^\n\\"]|\\.)*"'
+    #r'"([^\n\\"]|\\.)*"'
+    r'"([^\n\\"]|\\["n\\])*"'
     t.value = t.value[1:-1]
     return t
 
