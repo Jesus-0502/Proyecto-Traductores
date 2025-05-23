@@ -1,22 +1,18 @@
 import sys
 import os
 import ply.lex as lex
-#from utils import find_column, print_error
 from tokens import *
 
+# Funcion para calcular la columna de un token
+def find_column(input, token):
+    line_start = input.rfind('\n', 0, token.lexpos) + 1
+    return (token.lexpos - line_start) + 1
 
-def find_column(input_text, token):
-    last_cr = input_text.rfind('\n', 0, token.lexpos)
-    if last_cr < 0:
-        last_cr = -1
-    column = token.lexpos - last_cr
-    return column
-
+# Funcion para imprimir un error
 def print_error(char, row, column):
     print(f"Error: Unexpected character \"{char}\" in row {row}, column {column}")
 
 lexer = lex.lex()
-
 
 def main():
     if len(sys.argv) != 2:
