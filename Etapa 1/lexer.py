@@ -1,7 +1,13 @@
+# Traductores e Interpretadores
+# Etapa 1 del Proyecto
+# Elaborado por: Mauricio Fragachan 20-10265
+#                Jesus Gutierrez 20-10332
+
+
 import sys
-import os
 import ply.lex as lex
 
+# Lista de palabras reservadas
 reserved = {
     'if': 'TkIf',
     'while': 'TkWhile',
@@ -19,6 +25,7 @@ reserved = {
     'skip': 'TkSkip'
 }
 
+# Lista de tokens
 tokens = list(reserved.values()) + [
     'TkId', 'TkNum', 'TkString',
     'TkOBlock', 'TkCBlock', 'TkSoForth', 'TkComma', 'TkOpenPar', 'TkClosePar', 'TkAsig', 'TkSemicolon', 'TkArrow', 'TkGuard',
@@ -86,7 +93,6 @@ def t_TkLeq(t):
 def t_TkLess(t):
     r'<'
     return t
-
 
 def t_TkGeq(t):
     r'>='
