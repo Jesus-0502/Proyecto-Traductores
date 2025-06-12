@@ -1,0 +1,302 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    ERROR
+    TkAnd
+    TkApp
+    TkArrow
+    TkCBracket
+    TkClosePar
+    TkElse
+    TkEnd
+    TkEqual
+    TkFalse
+    TkFi
+    TkFunction
+    TkGeq
+    TkGreater
+    TkGuard
+    TkIf
+    TkLeq
+    TkLess
+    TkMinus
+    TkMult
+    TkNEqual
+    TkNot
+    TkOBracket
+    TkOpenPar
+    TkOr
+    TkPrint
+    TkSkip
+    TkSoForth
+    TkTrue
+    TkTwoPoints
+    TkWhile
+
+Grammar
+
+Rule 0     S' -> program
+Rule 1     program -> TkOBlock declarationlist TkSemicolon instructionlist TkCBlock
+Rule 2     declarationlist -> declarationlist TkSemicolon declaration
+Rule 3     declarationlist -> declaration
+Rule 4     declaration -> TkInt idlist
+Rule 5     declaration -> TkBool idlist
+Rule 6     idlist -> idlist TkComma TkId
+Rule 7     idlist -> TkId
+Rule 8     instructionlist -> instructionlist TkSemicolon instruction
+Rule 9     instructionlist -> instruction
+Rule 10    instruction -> TkId TkAsig TkNum
+Rule 11    string -> string TkPlus TkString
+Rule 12    string -> TkString
+
+Terminals, with rules where they appear
+
+ERROR                : 
+TkAnd                : 
+TkApp                : 
+TkArrow              : 
+TkAsig               : 10
+TkBool               : 5
+TkCBlock             : 1
+TkCBracket           : 
+TkClosePar           : 
+TkComma              : 6
+TkElse               : 
+TkEnd                : 
+TkEqual              : 
+TkFalse              : 
+TkFi                 : 
+TkFunction           : 
+TkGeq                : 
+TkGreater            : 
+TkGuard              : 
+TkId                 : 6 7 10
+TkIf                 : 
+TkInt                : 4
+TkLeq                : 
+TkLess               : 
+TkMinus              : 
+TkMult               : 
+TkNEqual             : 
+TkNot                : 
+TkNum                : 10
+TkOBlock             : 1
+TkOBracket           : 
+TkOpenPar            : 
+TkOr                 : 
+TkPlus               : 11
+TkPrint              : 
+TkSemicolon          : 1 2 8
+TkSkip               : 
+TkSoForth            : 
+TkString             : 11 12
+TkTrue               : 
+TkTwoPoints          : 
+TkWhile              : 
+error                : 
+
+Nonterminals, with rules where they appear
+
+declaration          : 2 3
+declarationlist      : 1 2
+idlist               : 4 5 6
+instruction          : 8 9
+instructionlist      : 1 8
+program              : 0
+string               : 11
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . program
+    (1) program -> . TkOBlock declarationlist TkSemicolon instructionlist TkCBlock
+
+    TkOBlock        shift and go to state 2
+
+    program                        shift and go to state 1
+
+state 1
+
+    (0) S' -> program .
+
+
+
+state 2
+
+    (1) program -> TkOBlock . declarationlist TkSemicolon instructionlist TkCBlock
+    (2) declarationlist -> . declarationlist TkSemicolon declaration
+    (3) declarationlist -> . declaration
+    (4) declaration -> . TkInt idlist
+    (5) declaration -> . TkBool idlist
+
+    TkInt           shift and go to state 5
+    TkBool          shift and go to state 6
+
+    declarationlist                shift and go to state 3
+    declaration                    shift and go to state 4
+
+state 3
+
+    (1) program -> TkOBlock declarationlist . TkSemicolon instructionlist TkCBlock
+    (2) declarationlist -> declarationlist . TkSemicolon declaration
+
+    TkSemicolon     shift and go to state 7
+
+
+state 4
+
+    (3) declarationlist -> declaration .
+
+    TkSemicolon     reduce using rule 3 (declarationlist -> declaration .)
+
+
+state 5
+
+    (4) declaration -> TkInt . idlist
+    (6) idlist -> . idlist TkComma TkId
+    (7) idlist -> . TkId
+
+    TkId            shift and go to state 9
+
+    idlist                         shift and go to state 8
+
+state 6
+
+    (5) declaration -> TkBool . idlist
+    (6) idlist -> . idlist TkComma TkId
+    (7) idlist -> . TkId
+
+    TkId            shift and go to state 9
+
+    idlist                         shift and go to state 10
+
+state 7
+
+    (1) program -> TkOBlock declarationlist TkSemicolon . instructionlist TkCBlock
+    (2) declarationlist -> declarationlist TkSemicolon . declaration
+    (8) instructionlist -> . instructionlist TkSemicolon instruction
+    (9) instructionlist -> . instruction
+    (4) declaration -> . TkInt idlist
+    (5) declaration -> . TkBool idlist
+    (10) instruction -> . TkId TkAsig TkNum
+
+    TkInt           shift and go to state 5
+    TkBool          shift and go to state 6
+    TkId            shift and go to state 14
+
+    instructionlist                shift and go to state 11
+    declaration                    shift and go to state 12
+    instruction                    shift and go to state 13
+
+state 8
+
+    (4) declaration -> TkInt idlist .
+    (6) idlist -> idlist . TkComma TkId
+
+    TkSemicolon     reduce using rule 4 (declaration -> TkInt idlist .)
+    TkComma         shift and go to state 15
+
+
+state 9
+
+    (7) idlist -> TkId .
+
+    TkComma         reduce using rule 7 (idlist -> TkId .)
+    TkSemicolon     reduce using rule 7 (idlist -> TkId .)
+
+
+state 10
+
+    (5) declaration -> TkBool idlist .
+    (6) idlist -> idlist . TkComma TkId
+
+    TkSemicolon     reduce using rule 5 (declaration -> TkBool idlist .)
+    TkComma         shift and go to state 15
+
+
+state 11
+
+    (1) program -> TkOBlock declarationlist TkSemicolon instructionlist . TkCBlock
+    (8) instructionlist -> instructionlist . TkSemicolon instruction
+
+    TkCBlock        shift and go to state 17
+    TkSemicolon     shift and go to state 16
+
+
+state 12
+
+    (2) declarationlist -> declarationlist TkSemicolon declaration .
+
+    TkSemicolon     reduce using rule 2 (declarationlist -> declarationlist TkSemicolon declaration .)
+
+
+state 13
+
+    (9) instructionlist -> instruction .
+
+    TkCBlock        reduce using rule 9 (instructionlist -> instruction .)
+    TkSemicolon     reduce using rule 9 (instructionlist -> instruction .)
+
+
+state 14
+
+    (10) instruction -> TkId . TkAsig TkNum
+
+    TkAsig          shift and go to state 18
+
+
+state 15
+
+    (6) idlist -> idlist TkComma . TkId
+
+    TkId            shift and go to state 19
+
+
+state 16
+
+    (8) instructionlist -> instructionlist TkSemicolon . instruction
+    (10) instruction -> . TkId TkAsig TkNum
+
+    TkId            shift and go to state 14
+
+    instruction                    shift and go to state 20
+
+state 17
+
+    (1) program -> TkOBlock declarationlist TkSemicolon instructionlist TkCBlock .
+
+    $end            reduce using rule 1 (program -> TkOBlock declarationlist TkSemicolon instructionlist TkCBlock .)
+
+
+state 18
+
+    (10) instruction -> TkId TkAsig . TkNum
+
+    TkNum           shift and go to state 21
+
+
+state 19
+
+    (6) idlist -> idlist TkComma TkId .
+
+    TkComma         reduce using rule 6 (idlist -> idlist TkComma TkId .)
+    TkSemicolon     reduce using rule 6 (idlist -> idlist TkComma TkId .)
+
+
+state 20
+
+    (8) instructionlist -> instructionlist TkSemicolon instruction .
+
+    TkCBlock        reduce using rule 8 (instructionlist -> instructionlist TkSemicolon instruction .)
+    TkSemicolon     reduce using rule 8 (instructionlist -> instructionlist TkSemicolon instruction .)
+
+
+state 21
+
+    (10) instruction -> TkId TkAsig TkNum .
+
+    TkCBlock        reduce using rule 10 (instruction -> TkId TkAsig TkNum .)
+    TkSemicolon     reduce using rule 10 (instruction -> TkId TkAsig TkNum .)
+

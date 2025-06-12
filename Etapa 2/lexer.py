@@ -147,7 +147,6 @@ def t_TkString(t):
 
 def t_TkNum(t):
     r'\d+'
-    t.value = int(t.value)
     return t
 
 def t_TkId(t):
