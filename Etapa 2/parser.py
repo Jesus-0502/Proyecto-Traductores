@@ -71,12 +71,13 @@ def p_instruction(p):
                    | while
                    | if
                    | print
-                   | skip'''
+                   | skip
+                   | program'''
     p[0] = p[1]
 
 def p_assignment(p):
     'assignment : TkId TkAsig expression'
-    p[0] = ("Asig", ("Ident", p[1]), p[3])
+    p[0] = ("Asig", ("Ident: " + p[1]), p[3])
 
 def p_print(p):
     '''print : TkPrint expression
@@ -96,19 +97,16 @@ def p_if(p):
     p[0] = ("If",) + tuple(p[2])
 
 def p_guardlist(p):
-    '''guardlist : guard
-                 | guard TkGuard guardlist'''
-    if len(p) == 2:
-        p[0] = (p[1],)
+    '''guardlist : guardlist TkGuard guard
+                 | guard'''
+    if len(p) == 4:
+        p[0] = ("Guard", p[1], p[3])
     else:
-        p[0] = (p[1],) + p[3]
+        p[0] = p[1]
 
 def p_guard(p):
-    '''guard : expression TkArrow instructions
-             | expression TkArrow program'''
-    p[0] = ("Guard", ("Then", p[1], p[3]))
-
-# --- Expresiones ---
+    'guard : expression TkArrow instructions'
+    p[0] = ("Then", p[3])
 
     
 # Operadores binarios
@@ -152,7 +150,7 @@ def p_expression_binoperators(p):
 def p_expression_dotaccess(p):
     '''expression : expression TkApp TkId
                   | expression TkApp TkNum'''
-    p[0] = ("App", p[1], ("Literal", p[3]))
+    p[0] = ("App", p[1], ("Literal: " + p[3]))
 
 def p_expression_not(p):
     'expression : TkNot expression'
@@ -172,9 +170,9 @@ def p_expression_literal(p):
                   | TkFalse'''
     t = p.slice[1].type
     if t == "TkTrue":
-        p[0] = ("Literal", True)
+        p[0] = ("Literal: " + p[1])
     elif t == "TkFalse":
-        p[0] = ("Literal", False)
+        p[0] = ("Literal: " + p[1])
     else:
         p[0] = ("Literal: "+ p[1])
 
@@ -188,7 +186,7 @@ def p_expression_app(p):
 
 def p_app(p):
     'app : TkId accesslist'
-    p[0] = ("App", ("Ident", p[1])) + tuple(p[2])
+    p[0] = ("WriteFunction", ("Ident: " + p[1])) + tuple(p[2])
 
 def p_accesslist(p):
     '''accesslist : access accesslist
@@ -200,11 +198,11 @@ def p_accesslist(p):
 
 def p_access(p):
     'access : TkOpenPar index TkClosePar'
-    p[0] = ("TwoPoints", ("Literal", p[2][0]), p[2][1])
+    p[0] = p[2]
 
 def p_index(p):
-    'index : TkNum TkTwoPoints expression'
-    p[0] = (p[1], p[3])
+    'index : expression TkTwoPoints expression'
+    p[0] = ("TwoPoints", p[1], p[3])
     
 def p_type_string(p):
     'string : TkString' 
@@ -215,6 +213,7 @@ def p_sum_string(p):
                 | expression TkPlus string
                 | string TkPlus expression'''
     p[0] = ("Plus", p[1], p[3])
+
 
 # --- Vacío y errores ---
 
