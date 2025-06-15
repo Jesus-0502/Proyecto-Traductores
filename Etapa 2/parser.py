@@ -10,15 +10,17 @@ from lexer import tokens, lexer
 precedence = (
     ('left', 'TkOr'),
     ('left', 'TkAnd'),
-    ('right', 'TkNot'),
-    ('nonassoc', 'TkLess', 'TkLeq', 'TkGreater', 'TkGeq', 'TkEqual', 'TkNEqual'),
+    ('left', 'TkEqual', 'TkNEqual'),
+    ('nonassoc', 'TkLess', 'TkLeq', 'TkGreater', 'TkGeq'),
     ('left', 'TkPlus', 'TkMinus'),
     ('left', 'TkMult'),
-    ('right', 'UMINUS'),
+    ('nonassoc', 'TkApp'),
+    ('right', 'TkNot'),
+    ('right', 'UMINUS')
 )
 
 # ----------------------------
-# Reglas de la gramática
+# -- Reglas de la gramatica --
 # ----------------------------
 
 def p_program(p):
@@ -55,6 +57,12 @@ def p_idlist(p):
         p[0] = f"{p[1]}, {p[3]}"
     else:
         p[0] = p[1]
+        
+def p_expression_list(p):
+    '''expressionlist : expressionlist TkComma expression
+                        | expression TkComma expression'''
+    if len(p) == 4:
+        p[0] = ("Comma", p[1], p[3]) 
 
 # --- Instrucciones ---
 
@@ -76,7 +84,8 @@ def p_instruction(p):
     p[0] = p[1]
 
 def p_assignment(p):
-    'assignment : TkId TkAsig expression'
+    '''assignment : TkId TkAsig expression
+                    | TkId TkAsig expressionlist'''
     p[0] = ("Asig", ("Ident: " + p[1]), p[3])
 
 def p_print(p):
@@ -86,7 +95,7 @@ def p_print(p):
 
 def p_skip(p):
     'skip : TkSkip'
-    p[0] = ("Skip",)
+    p[0] = ("skip",)
 
 def p_while(p):
     'while : TkWhile expression TkArrow instructions TkEnd'
@@ -94,7 +103,7 @@ def p_while(p):
 
 def p_if(p):
     'if : TkIf guardlist TkFi'
-    p[0] = ("If",) + tuple(p[2])
+    p[0] = ("If", p[2])
 
 def p_guardlist(p):
     '''guardlist : guardlist TkGuard guard
@@ -106,10 +115,12 @@ def p_guardlist(p):
 
 def p_guard(p):
     'guard : expression TkArrow instructions'
-    p[0] = ("Then", p[3])
+    p[0] = ("Then", p[1], p[3])
 
-    
-# Operadores binarios
+# ------------------
+# --- Operadores ---
+# ------------------
+
 def p_expression_binoperators(p):
     '''expression : expression TkPlus expression
                 | expression TkMinus expression
@@ -147,18 +158,26 @@ def p_expression_binoperators(p):
         case 'and':
             p[0] = ("And", p[1], p[3])
 
+def p_expression_unoperators(p):
+    '''expression : TkNot expression
+                  | TkMinus expression %prec UMINUS'''
+    match p[1]:
+        case '-':
+            p[0] = ("Minus", p[2])
+        case '!':
+            p[0] = ("Not", p[2])
+
+
+# -------------------------------------------------
 def p_expression_dotaccess(p):
     '''expression : expression TkApp TkId
                   | expression TkApp TkNum'''
-    p[0] = ("App", p[1], ("Literal: " + p[3]))
-
-def p_expression_not(p):
-    'expression : TkNot expression'
-    p[0] = ("Not", p[2])
-
-def p_expression_uminus(p):
-    'expression : TkMinus expression %prec UMINUS'
-    p[0] = ("Minus", p[2])
+    token_type = p.slice[3].type
+    if token_type == 'TkId':
+        p[0] = ("App", p[1], ("Ident: " + p[3]))
+    else: 
+        p[0] = ("App", p[1], ("Literal: "+ p[3]))
+    #p[0] = ("App", p[1], ("Literal: " + p[3]))
 
 def p_expression_group(p):
     'expression : TkOpenPar expression TkClosePar'
@@ -214,8 +233,9 @@ def p_sum_string(p):
                 | string TkPlus expression'''
     p[0] = ("Plus", p[1], p[3])
 
-
+# -----------------------
 # --- Vacío y errores ---
+# -----------------------
 
 def p_empty(p):
     'empty :'
@@ -240,9 +260,9 @@ def print_ast(tree, indent=0):
     else:
         print("-" * indent + str(tree))
 
-# --------------------
-# Ejecución principal
-# --------------------
+# -----------------------
+# - Ejecucion principal -
+# -----------------------
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -252,7 +272,6 @@ if __name__ == '__main__':
     with open(sys.argv[1], encoding="utf-8") as f:
         source_code = f.read()
 
-    # print(source_code)
     parser = yacc.yacc()
     result = parser.parse(source_code, lexer=lexer)
     print_ast(result)
