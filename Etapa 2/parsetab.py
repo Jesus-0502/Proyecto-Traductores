@@ -6,9 +6,9 @@ _tabversion = '3.10'
 
 _lr_method = 'LALR'
 
-_lr_signature = 'ERROR TkAnd TkApp TkArrow TkAsig TkBool TkCBlock TkCBracket TkClosePar TkComma TkElse TkEnd TkEqual TkFalse TkFi TkFunction TkGeq TkGreater TkGuard TkId TkIf TkInt TkLeq TkLess TkMinus TkMult TkNEqual TkNot TkNum TkOBlock TkOBracket TkOpenPar TkOr TkPlus TkPrint TkSemicolon TkSkip TkSoForth TkString TkTrue TkTwoPoints TkWhileprogram : TkOBlock declarationlist TkSemicolon instructionlist TkCBlock declarationlist : declarationlist TkSemicolon declaration\n                        | declaration  declaration : TkInt idlist\n                    | TkBool idlist idlist : idlist TkComma TkId\n                        | TkId instructionlist : instructionlist TkSemicolon instruction\n                        | instructioninstruction : TkId TkAsig TkNumstring : string TkPlus TkString\n                | TkString'
+_lr_signature = 'leftTkOrleftTkAndrightTkNotnonassocTkLessTkLeqTkGreaterTkGeqTkEqualTkNEqualleftTkPlusTkMinusleftTkMultrightUMINUSERROR TkAnd TkApp TkArrow TkAsig TkBool TkCBlock TkCBracket TkClosePar TkComma TkElse TkEnd TkEqual TkFalse TkFi TkFunction TkGeq TkGreater TkGuard TkId TkIf TkInt TkLeq TkLess TkMinus TkMult TkNEqual TkNot TkNum TkOBlock TkOBracket TkOpenPar TkOr TkPlus TkPrint TkSemicolon TkSkip TkSoForth TkString TkTrue TkTwoPoints TkWhileprogram : TkOBlock declarations TkSemicolon instructions TkCBlockdeclarations : declarations TkSemicolon declaration\n                    | declarationdeclaration : TkInt idlist\n                   | TkBool idlist\n                   | TkFunction TkOBracket TkSoForth TkNum TkCBracket idlistidlist : idlist TkComma TkId\n              | TkIdinstructions : instructions TkSemicolon instruction\n                    | instructioninstruction : assignment\n                   | while\n                   | if\n                   | print\n                   | skipassignment : TkId TkAsig expressionprint : TkPrint expressionskip : TkSkipwhile : TkWhile expression TkArrow instructions TkEndif : TkIf guardlist TkFiguardlist : guard\n                 | guard TkGuard guardlistguard : expression TkArrow instructionsexpression : expression TkPlus expression\n                  | expression TkMinus expression\n                  | expression TkMult expression\n                  | expression TkAnd expression\n                  | expression TkOr expression\n                  | expression TkLeq expression\n                  | expression TkGeq expression\n                  | expression TkLess expression\n                  | expression TkGreater expression\n                  | expression TkEqual expression\n                  | expression TkNEqual expression\n                  | expression TkComma expressionexpression : expression TkApp TkId\n                  | expression TkApp TkNumexpression : TkNot expressionexpression : TkMinus expression %prec UMINUSexpression : TkOpenPar expression TkCloseParexpression : TkNum\n                  | TkTrue\n                  | TkFalse\n                  | TkStringexpression : TkIdexpression : appapp : TkId accesslistaccesslist : access accesslist\n                  | emptyaccess : TkOpenPar index TkCloseParindex : TkNum TkTwoPoints expressionempty :'
     
-_lr_action_items = {'TkOBlock':([0,],[2,]),'$end':([1,17,],[0,-1,]),'TkInt':([2,7,],[5,5,]),'TkBool':([2,7,],[6,6,]),'TkSemicolon':([3,4,8,9,10,11,12,13,19,20,21,],[7,-3,-4,-7,-5,16,-2,-9,-6,-8,-10,]),'TkId':([5,6,7,15,16,],[9,9,14,19,14,]),'TkComma':([8,9,10,19,],[15,-7,15,-6,]),'TkCBlock':([11,13,20,21,],[17,-9,-8,-10,]),'TkAsig':([14,],[18,]),'TkNum':([18,],[21,]),}
+_lr_action_items = {'TkOBlock':([0,],[2,]),'$end':([1,29,],[0,-1,]),'TkInt':([2,8,],[5,5,]),'TkBool':([2,8,],[6,6,]),'TkFunction':([2,8,],[7,7,]),'TkSemicolon':([3,4,9,10,11,13,14,15,16,17,18,19,20,25,33,34,37,38,39,40,44,45,47,48,63,64,65,66,68,70,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,94,95,96,97,],[8,-3,-4,-8,-5,28,-2,-10,-11,-12,-13,-14,-15,-18,-45,-41,-42,-43,-44,-46,-17,-7,-9,-16,-39,-47,-52,-49,-38,-20,28,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,-35,-36,-37,-48,-40,28,-6,-19,-50,]),'TkId':([5,6,8,22,23,24,26,28,30,32,35,36,49,50,51,52,53,54,55,56,57,58,59,60,61,62,71,72,73,98,],[10,10,21,33,33,33,45,21,33,33,33,33,21,33,33,33,33,33,33,33,33,33,33,33,33,87,33,21,10,33,]),'TkOBracket':([7,],[12,]),'TkWhile':([8,28,49,72,],[22,22,22,22,]),'TkIf':([8,28,49,72,],[23,23,23,23,]),'TkPrint':([8,28,49,72,],[24,24,24,24,]),'TkSkip':([8,28,49,72,],[25,25,25,25,]),'TkComma':([9,10,11,31,33,34,37,38,39,40,43,44,45,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,95,97,99,],[26,-8,26,61,-45,-41,-42,-43,-44,-46,61,61,-7,61,-39,-47,-52,-49,-38,61,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,61,-36,-37,-48,-40,26,-50,61,]),'TkSoForth':([12,],[27,]),'TkCBlock':([13,15,16,17,18,19,20,25,33,34,37,38,39,40,44,47,48,63,64,65,66,68,70,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,96,97,],[29,-10,-11,-12,-13,-14,-15,-18,-45,-41,-42,-43,-44,-46,-17,-9,-16,-39,-47,-52,-49,-38,-20,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,-35,-36,-37,-48,-40,-19,-50,]),'TkEnd':([15,16,17,18,19,20,25,33,34,37,38,39,40,44,47,48,63,64,65,66,68,70,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,96,97,],[-10,-11,-12,-13,-14,-15,-18,-45,-41,-42,-43,-44,-46,-17,-9,-16,-39,-47,-52,-49,-38,-20,96,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,-35,-36,-37,-48,-40,-19,-50,]),'TkGuard':([15,16,17,18,19,20,25,33,34,37,38,39,40,42,44,47,48,63,64,65,66,68,70,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,94,96,97,],[-10,-11,-12,-13,-14,-15,-18,-45,-41,-42,-43,-44,-46,71,-17,-9,-16,-39,-47,-52,-49,-38,-20,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,-35,-36,-37,-48,-40,-23,-19,-50,]),'TkFi':([15,16,17,18,19,20,25,33,34,37,38,39,40,41,42,44,47,48,63,64,65,66,68,70,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,93,94,96,97,],[-10,-11,-12,-13,-14,-15,-18,-45,-41,-42,-43,-44,-46,70,-21,-17,-9,-16,-39,-47,-52,-49,-38,-20,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,-35,-36,-37,-48,-40,-22,-23,-19,-50,]),'TkAsig':([21,],[30,]),'TkNot':([22,23,24,30,32,35,36,50,51,52,53,54,55,56,57,58,59,60,61,71,98,],[35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,35,]),'TkMinus':([22,23,24,30,31,32,33,34,35,36,37,38,39,40,43,44,48,50,51,52,53,54,55,56,57,58,59,60,61,63,64,65,66,68,69,71,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,98,99,],[32,32,32,32,51,32,-45,-41,32,32,-42,-43,-44,-46,51,51,51,32,32,32,32,32,32,32,32,32,32,32,32,-39,-47,-52,-49,51,51,32,-24,-25,-26,51,51,51,51,51,51,51,51,51,-36,-37,-48,-40,-50,32,51,]),'TkOpenPar':([22,23,24,30,32,33,35,36,50,51,52,53,54,55,56,57,58,59,60,61,65,71,97,98,],[36,36,36,36,36,67,36,36,36,36,36,36,36,36,36,36,36,36,36,36,67,36,-50,36,]),'TkNum':([22,23,24,27,30,32,35,36,50,51,52,53,54,55,56,57,58,59,60,61,62,67,71,98,],[34,34,34,46,34,34,34,34,34,34,34,34,34,34,34,34,34,34,34,34,88,91,34,34,]),'TkTrue':([22,23,24,30,32,35,36,50,51,52,53,54,55,56,57,58,59,60,61,71,98,],[37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,37,]),'TkFalse':([22,23,24,30,32,35,36,50,51,52,53,54,55,56,57,58,59,60,61,71,98,],[38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,]),'TkString':([22,23,24,30,32,35,36,50,51,52,53,54,55,56,57,58,59,60,61,71,98,],[39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,]),'TkArrow':([31,33,34,37,38,39,40,43,63,64,65,66,68,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,],[49,-45,-41,-42,-43,-44,-46,72,-39,-47,-52,-49,-38,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,-35,-36,-37,-48,-40,-50,]),'TkPlus':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[50,-45,-41,-42,-43,-44,-46,50,50,50,-39,-47,-52,-49,50,50,-24,-25,-26,50,50,50,50,50,50,50,50,50,-36,-37,-48,-40,-50,50,]),'TkMult':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[52,-45,-41,-42,-43,-44,-46,52,52,52,-39,-47,-52,-49,52,52,52,52,-26,52,52,52,52,52,52,52,52,52,-36,-37,-48,-40,-50,52,]),'TkAnd':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[53,-45,-41,-42,-43,-44,-46,53,53,53,-39,-47,-52,-49,-38,53,-24,-25,-26,-27,53,-29,-30,-31,-32,-33,-34,53,-36,-37,-48,-40,-50,53,]),'TkOr':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[54,-45,-41,-42,-43,-44,-46,54,54,54,-39,-47,-52,-49,-38,54,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,54,-36,-37,-48,-40,-50,54,]),'TkLeq':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[55,-45,-41,-42,-43,-44,-46,55,55,55,-39,-47,-52,-49,55,55,-24,-25,-26,55,55,None,None,None,None,None,None,55,-36,-37,-48,-40,-50,55,]),'TkGeq':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[56,-45,-41,-42,-43,-44,-46,56,56,56,-39,-47,-52,-49,56,56,-24,-25,-26,56,56,None,None,None,None,None,None,56,-36,-37,-48,-40,-50,56,]),'TkLess':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[57,-45,-41,-42,-43,-44,-46,57,57,57,-39,-47,-52,-49,57,57,-24,-25,-26,57,57,None,None,None,None,None,None,57,-36,-37,-48,-40,-50,57,]),'TkGreater':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[58,-45,-41,-42,-43,-44,-46,58,58,58,-39,-47,-52,-49,58,58,-24,-25,-26,58,58,None,None,None,None,None,None,58,-36,-37,-48,-40,-50,58,]),'TkEqual':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[59,-45,-41,-42,-43,-44,-46,59,59,59,-39,-47,-52,-49,59,59,-24,-25,-26,59,59,None,None,None,None,None,None,59,-36,-37,-48,-40,-50,59,]),'TkNEqual':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[60,-45,-41,-42,-43,-44,-46,60,60,60,-39,-47,-52,-49,60,60,-24,-25,-26,60,60,None,None,None,None,None,None,60,-36,-37,-48,-40,-50,60,]),'TkApp':([31,33,34,37,38,39,40,43,44,48,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,92,97,99,],[62,-45,-41,-42,-43,-44,-46,62,62,62,-39,-47,-52,-49,-38,62,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,62,-36,-37,-48,-40,-50,62,]),'TkClosePar':([33,34,37,38,39,40,63,64,65,66,68,69,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,92,97,99,],[-45,-41,-42,-43,-44,-46,-39,-47,-52,-49,-38,92,-24,-25,-26,-27,-28,-29,-30,-31,-32,-33,-34,-35,-36,-37,-48,97,-40,-50,-51,]),'TkCBracket':([46,],[73,]),'TkTwoPoints':([91,],[98,]),}
 
 _lr_action = {}
 for _k, _v in _lr_action_items.items():
@@ -17,7 +17,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'program':([0,],[1,]),'declarationlist':([2,],[3,]),'declaration':([2,7,],[4,12,]),'idlist':([5,6,],[8,10,]),'instructionlist':([7,],[11,]),'instruction':([7,16,],[13,20,]),}
+_lr_goto_items = {'program':([0,],[1,]),'declarations':([2,],[3,]),'declaration':([2,8,],[4,14,]),'idlist':([5,6,73,],[9,11,95,]),'instructions':([8,49,72,],[13,74,94,]),'instruction':([8,28,49,72,],[15,47,15,15,]),'assignment':([8,28,49,72,],[16,16,16,16,]),'while':([8,28,49,72,],[17,17,17,17,]),'if':([8,28,49,72,],[18,18,18,18,]),'print':([8,28,49,72,],[19,19,19,19,]),'skip':([8,28,49,72,],[20,20,20,20,]),'expression':([22,23,24,30,32,35,36,50,51,52,53,54,55,56,57,58,59,60,61,71,98,],[31,43,44,48,63,68,69,75,76,77,78,79,80,81,82,83,84,85,86,43,99,]),'app':([22,23,24,30,32,35,36,50,51,52,53,54,55,56,57,58,59,60,61,71,98,],[40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,]),'guardlist':([23,71,],[41,93,]),'guard':([23,71,],[42,42,]),'accesslist':([33,65,],[64,89,]),'access':([33,65,],[65,65,]),'empty':([33,65,],[66,66,]),'index':([67,],[90,]),}
 
 _lr_goto = {}
 for _k, _v in _lr_goto_items.items():
@@ -27,16 +27,56 @@ for _k, _v in _lr_goto_items.items():
 del _lr_goto_items
 _lr_productions = [
   ("S' -> program","S'",1,None,None,None),
-  ('program -> TkOBlock declarationlist TkSemicolon instructionlist TkCBlock','program',5,'p_program','parser.py',10),
-  ('declarationlist -> declarationlist TkSemicolon declaration','declarationlist',3,'p_declarationlist','parser.py',16),
-  ('declarationlist -> declaration','declarationlist',1,'p_declarationlist','parser.py',17),
-  ('declaration -> TkInt idlist','declaration',2,'p_declaration','parser.py',24),
-  ('declaration -> TkBool idlist','declaration',2,'p_declaration','parser.py',25),
-  ('idlist -> idlist TkComma TkId','idlist',3,'p_idlist','parser.py',29),
-  ('idlist -> TkId','idlist',1,'p_idlist','parser.py',30),
-  ('instructionlist -> instructionlist TkSemicolon instruction','instructionlist',3,'p_instructionlist','parser.py',37),
-  ('instructionlist -> instruction','instructionlist',1,'p_instructionlist','parser.py',38),
-  ('instruction -> TkId TkAsig TkNum','instruction',3,'p_instruction','parser.py',45),
-  ('string -> string TkPlus TkString','string',3,'p_type_string','parser.py',104),
-  ('string -> TkString','string',1,'p_type_string','parser.py',105),
+  ('program -> TkOBlock declarations TkSemicolon instructions TkCBlock','program',5,'p_program','parser.py',25),
+  ('declarations -> declarations TkSemicolon declaration','declarations',3,'p_declarations','parser.py',32),
+  ('declarations -> declaration','declarations',1,'p_declarations','parser.py',33),
+  ('declaration -> TkInt idlist','declaration',2,'p_declaration','parser.py',40),
+  ('declaration -> TkBool idlist','declaration',2,'p_declaration','parser.py',41),
+  ('declaration -> TkFunction TkOBracket TkSoForth TkNum TkCBracket idlist','declaration',6,'p_declaration','parser.py',42),
+  ('idlist -> idlist TkComma TkId','idlist',3,'p_idlist','parser.py',49),
+  ('idlist -> TkId','idlist',1,'p_idlist','parser.py',50),
+  ('instructions -> instructions TkSemicolon instruction','instructions',3,'p_instructions','parser.py',59),
+  ('instructions -> instruction','instructions',1,'p_instructions','parser.py',60),
+  ('instruction -> assignment','instruction',1,'p_instruction','parser.py',67),
+  ('instruction -> while','instruction',1,'p_instruction','parser.py',68),
+  ('instruction -> if','instruction',1,'p_instruction','parser.py',69),
+  ('instruction -> print','instruction',1,'p_instruction','parser.py',70),
+  ('instruction -> skip','instruction',1,'p_instruction','parser.py',71),
+  ('assignment -> TkId TkAsig expression','assignment',3,'p_assignment','parser.py',75),
+  ('print -> TkPrint expression','print',2,'p_print','parser.py',79),
+  ('skip -> TkSkip','skip',1,'p_skip','parser.py',83),
+  ('while -> TkWhile expression TkArrow instructions TkEnd','while',5,'p_while','parser.py',87),
+  ('if -> TkIf guardlist TkFi','if',3,'p_if','parser.py',91),
+  ('guardlist -> guard','guardlist',1,'p_guardlist','parser.py',95),
+  ('guardlist -> guard TkGuard guardlist','guardlist',3,'p_guardlist','parser.py',96),
+  ('guard -> expression TkArrow instructions','guard',3,'p_guard','parser.py',103),
+  ('expression -> expression TkPlus expression','expression',3,'p_expression_binop','parser.py',109),
+  ('expression -> expression TkMinus expression','expression',3,'p_expression_binop','parser.py',110),
+  ('expression -> expression TkMult expression','expression',3,'p_expression_binop','parser.py',111),
+  ('expression -> expression TkAnd expression','expression',3,'p_expression_binop','parser.py',112),
+  ('expression -> expression TkOr expression','expression',3,'p_expression_binop','parser.py',113),
+  ('expression -> expression TkLeq expression','expression',3,'p_expression_binop','parser.py',114),
+  ('expression -> expression TkGeq expression','expression',3,'p_expression_binop','parser.py',115),
+  ('expression -> expression TkLess expression','expression',3,'p_expression_binop','parser.py',116),
+  ('expression -> expression TkGreater expression','expression',3,'p_expression_binop','parser.py',117),
+  ('expression -> expression TkEqual expression','expression',3,'p_expression_binop','parser.py',118),
+  ('expression -> expression TkNEqual expression','expression',3,'p_expression_binop','parser.py',119),
+  ('expression -> expression TkComma expression','expression',3,'p_expression_binop','parser.py',120),
+  ('expression -> expression TkApp TkId','expression',3,'p_expression_dotaccess','parser.py',124),
+  ('expression -> expression TkApp TkNum','expression',3,'p_expression_dotaccess','parser.py',125),
+  ('expression -> TkNot expression','expression',2,'p_expression_not','parser.py',129),
+  ('expression -> TkMinus expression','expression',2,'p_expression_uminus','parser.py',133),
+  ('expression -> TkOpenPar expression TkClosePar','expression',3,'p_expression_group','parser.py',137),
+  ('expression -> TkNum','expression',1,'p_expression_literal','parser.py',141),
+  ('expression -> TkTrue','expression',1,'p_expression_literal','parser.py',142),
+  ('expression -> TkFalse','expression',1,'p_expression_literal','parser.py',143),
+  ('expression -> TkString','expression',1,'p_expression_literal','parser.py',144),
+  ('expression -> TkId','expression',1,'p_expression_id','parser.py',156),
+  ('expression -> app','expression',1,'p_expression_app','parser.py',160),
+  ('app -> TkId accesslist','app',2,'p_app','parser.py',164),
+  ('accesslist -> access accesslist','accesslist',2,'p_accesslist','parser.py',168),
+  ('accesslist -> empty','accesslist',1,'p_accesslist','parser.py',169),
+  ('access -> TkOpenPar index TkClosePar','access',3,'p_access','parser.py',176),
+  ('index -> TkNum TkTwoPoints expression','index',3,'p_index','parser.py',180),
+  ('empty -> <empty>','empty',0,'p_empty','parser.py',186),
 ]
