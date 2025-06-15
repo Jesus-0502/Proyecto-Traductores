@@ -86,6 +86,14 @@ def t_TkNot(t):
     r'!'
     return t
 
+def t_TkEqual(t):
+    r'=='
+    return t
+
+def t_TkNEqual(t):
+    r'<>'
+    return t
+
 def t_TkLeq(t):
     r'<='
     return t
@@ -100,14 +108,6 @@ def t_TkGeq(t):
 
 def t_TkGreater(t):
     r'>'
-    return t
-
-def t_TkEqual(t):
-    r'=='
-    return t
-
-def t_TkNEqual(t):
-    r'<>'
     return t
 
 def t_TkOBracket(t):
@@ -142,7 +142,6 @@ def t_newline(t):
 
 def t_TkString(t):
     r'"([^\n\\"]|\\["n\\])*"'
-    t.value = t.value[1:-1]
     return t
 
 def t_TkNum(t):

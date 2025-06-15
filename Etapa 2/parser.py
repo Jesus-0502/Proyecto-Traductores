@@ -22,9 +22,12 @@ precedence = (
 # ----------------------------
 
 def p_program(p):
-    'program : TkOBlock declarations TkSemicolon instructions TkCBlock'
-    p[0] = ("Block", ("Declare", p[2]), p[4])
-    print_ast(p[0])
+    '''program : TkOBlock declarations TkSemicolon instructions TkCBlock
+                | TkOBlock instructions TkCBlock'''
+    if len(p) == 6:
+        p[0] = ("Block", ("Declare", p[2]), p[4])
+    else:
+        p[0] = ("Block", p[2])
 
 # --- Declaraciones ---
 
@@ -76,7 +79,8 @@ def p_assignment(p):
     p[0] = ("Asig", ("Ident", p[1]), p[3])
 
 def p_print(p):
-    'print : TkPrint expression'
+    '''print : TkPrint expression
+             | TkPrint string'''
     p[0] = ("Print", p[2])
 
 def p_skip(p):
@@ -105,20 +109,43 @@ def p_guard(p):
 
 # --- Expresiones ---
 
-def p_expression_binop(p):
+    
+# Operadores binarios
+def p_expression_binoperators(p):
     '''expression : expression TkPlus expression
-                  | expression TkMinus expression
-                  | expression TkMult expression
-                  | expression TkAnd expression
-                  | expression TkOr expression
-                  | expression TkLeq expression
-                  | expression TkGeq expression
-                  | expression TkLess expression
-                  | expression TkGreater expression
-                  | expression TkEqual expression
-                  | expression TkNEqual expression
-                  | expression TkComma expression'''
-    p[0] = (p[2], p[1], p[3])
+                | expression TkMinus expression
+                | expression TkMult expression
+                | expression TkLeq expression
+                | expression TkGeq expression
+                | expression TkLess expression
+                | expression TkGreater expression
+                | expression TkEqual expression
+                | expression TkNEqual expression
+                | expression TkOr expression
+                | expression TkAnd expression'''
+    match p[2]:
+        case '+':
+            p[0] = ("Plus", p[1], p[3])
+        case '-':
+            p[0] = ("Minus", p[1], p[3])
+        case '*':
+            p[0] = ("Mult", p[1], p[3])
+        case '==':
+            p[0] = ("Equal", p[1], p[3])
+        case '<>':
+            p[0] = ("NotEqual", p[1], p[3])
+        case '<':
+            p[0] = ("Less", p[1], p[3])
+        case '>':
+            p[0] = ("Greater", p[1], p[3])
+        case '>=':
+            p[0] = ("Geq", p[1], p[3])
+        case '<=':
+            p[0] = ("Leq", p[1], p[3])
+        case 'or':
+            p[0] = ("Or", p[1], p[3])
+        case 'and':
+            p[0] = ("And", p[1], p[3])
 
 def p_expression_dotaccess(p):
     '''expression : expression TkApp TkId
@@ -140,21 +167,18 @@ def p_expression_group(p):
 def p_expression_literal(p):
     '''expression : TkNum
                   | TkTrue
-                  | TkFalse
-                  | TkString'''
+                  | TkFalse'''
     t = p.slice[1].type
-    if t == "TkString":
-        p[0] = ("String", p[1])
-    elif t == "TkTrue":
+    if t == "TkTrue":
         p[0] = ("Literal", True)
     elif t == "TkFalse":
         p[0] = ("Literal", False)
     else:
-        p[0] = ("Literal", p[1])
+        p[0] = ("Literal: "+ p[1])
 
 def p_expression_id(p):
     'expression : TkId'
-    p[0] = ("Ident", p[1])
+    p[0] = ("Ident: "+ p[1])
 
 def p_expression_app(p):
     'expression : app'
@@ -179,6 +203,16 @@ def p_access(p):
 def p_index(p):
     'index : TkNum TkTwoPoints expression'
     p[0] = (p[1], p[3])
+    
+def p_type_string(p):
+    'string : TkString' 
+    p[0] = ("String: " + p[1])
+        
+def p_sum_string(p):
+    '''string : string TkPlus string
+                | expression TkPlus string
+                | string TkPlus expression'''
+    p[0] = ("Plus", p[1], p[3])
 
 # --- Vacío y errores ---
 
@@ -219,10 +253,5 @@ if __name__ == '__main__':
 
     # print(source_code)
     parser = yacc.yacc()
-    parser.parse(source_code, lexer=lexer)
-
-
-
-
-# result = parser.parse(data, lexer=lexer)
-# print(result)
+    result = parser.parse(source_code, lexer=lexer)
+    print_ast(result)
