@@ -104,7 +104,8 @@ def p_guardlist(p):
         p[0] = (p[1],) + p[3]
 
 def p_guard(p):
-    'guard : expression TkArrow instructions'
+    '''guard : expression TkArrow instructions
+             | expression TkArrow program'''
     p[0] = ("Guard", ("Then", p[1], p[3]))
 
 # --- Expresiones ---
@@ -122,7 +123,8 @@ def p_expression_binoperators(p):
                 | expression TkEqual expression
                 | expression TkNEqual expression
                 | expression TkOr expression
-                | expression TkAnd expression'''
+                | expression TkAnd expression
+                | expression TkComma expression'''
     match p[2]:
         case '+':
             p[0] = ("Plus", p[1], p[3])
