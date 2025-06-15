@@ -7,6 +7,10 @@ import sys
 import ply.yacc as yacc
 from lexer import tokens, lexer
 
+
+# -------------------------
+# - Reglas de precedencia -
+# -------------------------
 precedence = (
     ('left', 'TkOr'),
     ('left', 'TkAnd'),
@@ -20,7 +24,7 @@ precedence = (
 )
 
 # ----------------------------
-# -- Reglas de la gramatica --
+# -- Reglas del programa principal --
 # ----------------------------
 
 def p_program(p):
@@ -31,7 +35,9 @@ def p_program(p):
     else:
         p[0] = ("Block", p[2])
 
+# ---------------------
 # --- Declaraciones ---
+# ---------------------
 
 def p_declarations(p):
     '''declarations : declarations TkSemicolon declaration
@@ -64,7 +70,9 @@ def p_expression_list(p):
     if len(p) == 4:
         p[0] = ("Comma", p[1], p[3]) 
 
+# ---------------------
 # --- Instrucciones ---
+# ---------------------
 
 def p_instructions(p):
     '''instructions : instructions TkSemicolon instruction
@@ -75,8 +83,7 @@ def p_instructions(p):
         p[0] = p[1]
 
 def p_instruction(p):
-    '''instruction : assignment
-                   | while
+    '''instruction : while
                    | if
                    | print
                    | skip
@@ -84,8 +91,9 @@ def p_instruction(p):
     p[0] = p[1]
 
 def p_assignment(p):
-    '''assignment : TkId TkAsig expression
-                    | TkId TkAsig expressionlist'''
+    '''instruction : TkId TkAsig expression
+                    | TkId TkAsig expressionlist
+                    | TkId TkAsig functionMod'''
     p[0] = ("Asig", ("Ident: " + p[1]), p[3])
 
 def p_print(p):
@@ -132,8 +140,7 @@ def p_expression_binoperators(p):
                 | expression TkEqual expression
                 | expression TkNEqual expression
                 | expression TkOr expression
-                | expression TkAnd expression
-                | expression TkComma expression'''
+                | expression TkAnd expression'''
     match p[2]:
         case '+':
             p[0] = ("Plus", p[1], p[3])
@@ -167,8 +174,9 @@ def p_expression_unoperators(p):
         case '!':
             p[0] = ("Not", p[2])
 
-
-# -------------------------------------------------
+# ----------------------------------------
+# - Definicion y asignacion de funciones -
+# ----------------------------------------
 def p_expression_dotaccess(p):
     '''expression : expression TkApp TkId
                   | expression TkApp TkNum'''
@@ -177,11 +185,46 @@ def p_expression_dotaccess(p):
         p[0] = ("App", p[1], ("Ident: " + p[3]))
     else: 
         p[0] = ("App", p[1], ("Literal: "+ p[3]))
-    #p[0] = ("App", p[1], ("Literal: " + p[3]))
+        
+def p_expression_app(p):
+    'expression : TkId TkApp expression'
+    p[0] = ("App", "Ident: " + p[1], p[3])
 
-def p_expression_group(p):
-    'expression : TkOpenPar expression TkClosePar'
-    p[0] = p[2]
+def p_expression_function_app(p):
+    'expression : functionMod TkApp expression'
+    p[0] = ("App", p[1], p[3])
+
+def p_function_mod(p):
+    '''functionMod : functionMod TkOpenPar twopoints TkClosePar
+                    | TkId TkOpenPar twopoints TkClosePar'''
+    if p.slice[1].type == 'functionMod':
+        p[0] = ("WriteFunction", p[1], p[3])
+    else:
+        p[0] = ("WriteFunction", "Ident: " + p[1], p[3])
+
+
+def p_twopoints(p):
+    '''twopoints : expression TkTwoPoints expression'''
+    p[0] = ("TwoPoints", p[1], p[3])
+    
+
+def p_expression_id(p):
+    'expression : TkId'
+    p[0] = "Ident: " + p[1]
+
+# -----------------------    
+# - Strings y Literales -
+# -----------------------
+    
+def p_type_string(p):
+    'string : TkString' 
+    p[0] = ("String: " + p[1])
+        
+def p_sum_string(p):
+    '''string : string TkPlus string
+                | expression TkPlus string
+                | string TkPlus expression'''
+    p[0] = ("Plus", p[1], p[3])
 
 def p_expression_literal(p):
     '''expression : TkNum
@@ -194,52 +237,9 @@ def p_expression_literal(p):
         p[0] = ("Literal: " + p[1])
     else:
         p[0] = ("Literal: "+ p[1])
-
-def p_expression_id(p):
-    'expression : TkId'
-    p[0] = ("Ident: "+ p[1])
-
-def p_expression_app(p):
-    'expression : app'
-    p[0] = p[1]
-
-def p_app(p):
-    'app : TkId accesslist'
-    p[0] = ("WriteFunction", ("Ident: " + p[1])) + tuple(p[2])
-
-def p_accesslist(p):
-    '''accesslist : access accesslist
-                  | empty'''
-    if len(p) == 3:
-        p[0] = [p[1]] + p[2]
-    else:
-        p[0] = []
-
-def p_access(p):
-    'access : TkOpenPar index TkClosePar'
-    p[0] = p[2]
-
-def p_index(p):
-    'index : expression TkTwoPoints expression'
-    p[0] = ("TwoPoints", p[1], p[3])
-    
-def p_type_string(p):
-    'string : TkString' 
-    p[0] = ("String: " + p[1])
-        
-def p_sum_string(p):
-    '''string : string TkPlus string
-                | expression TkPlus string
-                | string TkPlus expression'''
-    p[0] = ("Plus", p[1], p[3])
-
 # -----------------------
 # --- Vacío y errores ---
 # -----------------------
-
-def p_empty(p):
-    'empty :'
-    p[0] = []
 
 def p_error(p):
     if p:
@@ -248,9 +248,9 @@ def p_error(p):
         print("Syntax error: unexpected end of input.")
     sys.exit(1)
     
-# --------------------
-# Impresión del árbol
-# --------------------
+# -----------------------
+# - Impresión del árbol -
+# -----------------------
 
 def print_ast(tree, indent=0):
     if isinstance(tree, tuple):
