@@ -6,7 +6,9 @@ El siguiente proyecto tiene como objetivo construir un traductor para un lenguaj
 Esta entrega consiste en la implementación de un analizador lexicográfico para el lenguaje imperativo definido en el enunciado del proyecto. Dicho analizador está implementado en `lexer.py` utilizando la libreria `PLY` de Python.
 
 ##### Ejecución:
-```python3 lexer.py <archivo.imperat>```
+```bash
+python3 lexer.py <archivo.imperat>
+```
 
 
 ## Etapa 2
@@ -15,4 +17,6 @@ sintáctico abstracto del programa reconocido e imprimirlo de forma legible por 
 La gramática está detallada en `gramatica.txt` y el reconocedor en `parser.py`.
 
 ##### Ejecución:
-``` python3 parser.py <archivo.imperat>```
+```bash
+ python3 parser.py <archivo.imperat>
+ ```
