@@ -57,12 +57,16 @@ def p_declaration(p):
         p[0] = f"{p[6]} : function[..Literal: {p[4]}]"
 
 def p_idlist(p):
-    '''idlist : idlist TkComma TkId
-              | TkId'''
+    '''idlist : idlist TkComma id
+              | id'''
     if len(p) == 4:
         p[0] = f"{p[1]}, {p[3]}"
     else:
         p[0] = p[1]
+        
+def p_id(p):
+    'id : TkId'
+    p[0] = p[1]
         
 def p_expression_list(p):
     '''expressionlist : expressionlist TkComma expression
@@ -211,6 +215,11 @@ def p_twopoints(p):
 def p_expression_id(p):
     'expression : TkId'
     p[0] = "Ident: " + p[1]
+    
+
+def p_expression_par(p):
+    'expression : TkOpenPar expression TkClosePar'
+    p[0] = p[2]
 
 # -----------------------    
 # - Strings y Literales -
