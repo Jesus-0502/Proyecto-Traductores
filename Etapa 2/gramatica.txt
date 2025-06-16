@@ -1,0 +1,89 @@
+Programa principal
+------------------
+program → TkOBlock declarations TkSemicolon instructions TkCBlock
+        | TkOBlock instructions TkCBlock
+
+Declaraciones
+-------------
+declarations → declarations TkSemicolon declaration
+             | declaration
+
+declaration → TkInt idlist
+            | TkBool idlist
+            | TkFunction TkOBracket TkSoForth TkNum TkCBracket idlist
+
+idlist → idlist TkComma TkId
+       | TkId
+
+Instrucciones
+-------------
+instructions → instructions TkSemicolon instruction
+             | instruction
+
+instruction → while
+            | if
+            | print
+            | skip
+            | program
+            | TkId TkAsig expression
+            | TkId TkAsig expressionlist
+            | TkId TkAsig functionMod
+
+skip → TkSkip
+
+print → TkPrint expression
+       | TkPrint string
+
+Estructuras de control
+----------------------
+while → TkWhile expression TkArrow instructions TkEnd
+
+if → TkIf guardlist TkFi
+
+guardlist → guardlist TkGuard guard
+          | guard
+
+guard → expression TkArrow instructions
+
+Funciones
+---------
+functionMod → functionMod TkOpenPar twopoints TkClosePar
+            | TkId TkOpenPar twopoints TkClosePar
+
+twopoints → expression TkTwoPoints expression
+
+Expresiones
+-----------
+expression → expression TkPlus expression
+           | expression TkMinus expression
+           | expression TkMult expression
+           | expression TkLeq expression
+           | expression TkGeq expression
+           | expression TkLess expression
+           | expression TkGreater expression
+           | expression TkEqual expression
+           | expression TkNEqual expression
+           | expression TkOr expression
+           | expression TkAnd expression
+           | TkMinus expression  %prec UMINUS
+           | TkNot expression
+           | expression TkApp TkId
+           | expression TkApp TkNum
+           | TkId TkApp expression
+           | functionMod TkApp expression
+           | TkId
+           | TkNum
+           | TkTrue
+           | TkFalse
+
+Listas de expresiones
+---------------------
+expressionlist → expression TkComma expression
+               | expressionlist TkComma expression
+
+Cadenas y concatenaciones
+-------------------------
+string → TkString
+       | string TkPlus string
+       | expression TkPlus string
+       | string TkPlus expression
