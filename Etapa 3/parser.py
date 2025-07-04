@@ -5,7 +5,7 @@
 
 import sys
 import ply.yacc as yacc
-from lexer import tokens, lexer
+from lexer import tokens, lexer, find_column
 
 
 # -------------------------
@@ -24,16 +24,49 @@ precedence = (
 )
 
 # ----------------------------
+# Tabla de Simbolos 
+# ----------------------------
+
+class SymbolTable:
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.symbols = {}  # nombre -> tipo
+
+    def declare(self, name, type_, lineno=None):
+        if name in self.symbols:
+            print(f"Variable {name} is already declared in the block at line {lineno}")
+            sys.exit(1)
+        self.symbols[name] = type_
+
+    def lookup(self, name, lineno=None, column=None):
+        if name in self.symbols:
+            return self.symbols[name]
+        elif self.parent:
+            return self.parent.lookup(name, lineno, column)
+        else:
+            print(f"Variable not declared at line {lineno} and column {column}")
+            sys.exit(1)
+
+    def print_table(self, indent=0):
+        
+        for name, type_ in self.symbols.items():
+            print("-" * (indent+1) + f"variable: {name} | type: {type_}")
+
+table = SymbolTable()
+# ----------------------------
 # -- Reglas del programa principal --
 # ----------------------------
 
 def p_program(p):
     '''program : TkOBlock declarations TkSemicolon instructions TkCBlock
                 | TkOBlock instructions TkCBlock'''
+    #global table
+    #table = SymbolTable(parent=table)
+    
     if len(p) == 6:
-        p[0] = ("Block", ("Declare", p[2]), p[4])
+        p[0] = ("Block", ("Symbols Table", table), p[4])
     else:
-        p[0] = ("Block", p[2])
+        p[0] = ("Block", ("Symbols Table"), p[2])
 
 # ---------------------
 # --- Declaraciones ---
@@ -42,19 +75,19 @@ def p_program(p):
 def p_declarations(p):
     '''declarations : declarations TkSemicolon declaration
                     | declaration'''
-    if len(p) == 4:
-        p[0] = ("Sequencing", p[1], p[3])
-    else:
-        p[0] = p[1]
 
 def p_declaration(p):
     '''declaration : TkInt idlist
                    | TkBool idlist
                    | TkFunction TkOBracket TkSoForth TkNum TkCBracket idlist'''
     if p[1] == 'int' or p[1] == 'bool':
-        p[0] = ("DeclareVar", p[2], p[1])
+        type = p[1]
+        for var in p[2]:
+            table.declare(var, type, p.lineno(1))
     else:
-        p[0] = ("DeclareVar", p[6], f"function[..{p[4]}]")
+        type = (p[1], p[4])
+        for var in p[6]:
+            table.declare(var, type, p.lineno(1))
 
 def p_idlist(p):
     '''idlist : idlist TkComma id
@@ -71,8 +104,15 @@ def p_id(p):
 def p_expression_list(p):
     '''expressionlist : expressionlist TkComma expression
                         | expression TkComma expression'''
-    if len(p) == 4:
-        p[0] = ("Comma", p[1], p[3]) 
+    # if len(p) == 4:
+        
+    type = p[3][-1]
+    print(p[1][-2])
+    if type != "int":
+        print(f"There is no integer list at line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+        sys.exit(1)
+        
+    p[0] = ("Comma", p[1], p[3]) 
 
 # ---------------------
 # --- Instrucciones ---
@@ -98,7 +138,32 @@ def p_assignment(p):
     '''instruction : TkId TkAsig expression
                     | TkId TkAsig expressionlist
                     | TkId TkAsig functionMod'''
-    p[0] = ("Asig", ("Ident: " + p[1]), p[3])
+                    
+    left_type = table.lookup(p[1])
+    right_type = p[3][-1]
+    
+    if left_type != right_type:
+        
+        if right_type[0] == "function" and left_type != "function":
+            
+            print(f"Variable {p[1]} is expected to be a function at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+            sys.exit(1)
+        
+        else:
+            print(f"Type error. Variable {p[1]} has different type than expression at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+            sys.exit(1)
+    else:
+        if  right_type[0] == "function" and left_type[0] == "function":
+            if right_type[1] != left_type[1]:
+                print(f"It is expected a list of length {left_type[1]} at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
+                sys.exit(1)
+    
+    
+    
+    
+    
+    
+    p[0] = ("Asig", ("Ident", p[1], left_type), p[3])
 
 def p_print(p):
     '''print : TkPrint expression
@@ -111,6 +176,12 @@ def p_skip(p):
 
 def p_while(p):
     'while : TkWhile expression TkArrow instructions TkEnd'
+    
+    type = p[2][-1]
+    
+    if type != "bool":
+        print(f"No boolean guard at line {p.lineno(3)} and column {find_column(source_code, p.slice[3])}")
+        sys.exit(1)
     p[0] = ("While", ("Then", p[2], p[4]))
 
 def p_if(p):
@@ -127,6 +198,12 @@ def p_guardlist(p):
 
 def p_guard(p):
     'guard : expression TkArrow instructions'
+    
+    type = p[1][-1]
+    
+    if type != "bool":
+        print(f"No boolean guard at line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+        sys.exit(1)
     p[0] = ("Then", p[1], p[3])
 
 # ------------------
@@ -145,38 +222,81 @@ def p_expression_binoperators(p: list):
                 | expression TkNEqual expression
                 | expression TkOr expression
                 | expression TkAnd expression'''
+                
+    left_type = p[1][-1]
+    right_type = p[3][-1]
     match p[2]:
         case '+':
-            p[0] = ("Plus", p[1], p[3])
+            if left_type != "int" or right_type != "int":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("Plus", p[1], p[3], "int")
         case '-':
-            p[0] = ("Minus", p[1], p[3])
+            if left_type != "int" or right_type != "int":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("Minus", p[1], p[3], "int")
         case '*':
-            p[0] = ("Mult", p[1], p[3])
+            if left_type != "int" or right_type != "int":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("Mult", p[1], p[3], "int")
         case '==':
-            p[0] = ("Equal", p[1], p[3])
+            if left_type != "int" or right_type != "int":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("Equal", p[1], p[3], "bool")
         case '<>':
-            p[0] = ("NotEqual", p[1], p[3])
+            if left_type != "int" or right_type != "int":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("NotEqual", p[1], p[3], "bool")
         case '<':
-            p[0] = ("Less", p[1], p[3])
+            if left_type != "int" or right_type != "int":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("Less", p[1], p[3], "bool")
         case '>':
-            p[0] = ("Greater", p[1], p[3])
+            if left_type != "int" or right_type != "int":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("Greater", p[1], p[3], "bool")
         case '>=':
-            p[0] = ("Geq", p[1], p[3])
+            if left_type != "int" or right_type != "int":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("Geq", p[1], p[3], "bool")
         case '<=':
-            p[0] = ("Leq", p[1], p[3])
+            if left_type != "int" or right_type != "int":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("Leq", p[1], p[3], "bool")
         case 'or':
-            p[0] = ("Or", p[1], p[3])
+            if left_type != "bool" or right_type != "bool":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("Or", p[1], p[3], "bool")
         case 'and':
-            p[0] = ("And", p[1], p[3])
+            if left_type != "bool" or right_type != "bool":
+                print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
+                sys.exit(1)
+            p[0] = ("And", p[1], p[3], "bool")
 
 def p_expression_unoperators(p: list):
     '''expression : TkNot expression
                   | TkMinus expression %prec UMINUS'''
+    right_type = p[2][-1]
     match p[1]:
         case '-':
-            p[0] = ("Minus", p[2])
+            if right_type != "int":
+                print(f"Type error in line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+                sys.exit(1)
+            p[0] = ("Minus", p[2], "int")
         case '!':
-            p[0] = ("Not", p[2])
+            if right_type != "bool":
+                print(f"Type error in line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+                sys.exit(1)
+            p[0] = ("Not", p[2], "bool")
 
 # ----------------------------------------
 # - Definicion y asignacion de funciones -
@@ -192,11 +312,27 @@ def p_expression_dotaccess(p):
         
 def p_expression_app(p):
     'expression : TkId TkApp expression'
-    p[0] = ("App", "Ident: " + p[1], p[3])
+    
+    left_type = table.lookup(p[1])
+    right_type = p[3][-1]
+    
+    if left_type != "function":
+        print(f"Error. {p[1]} is not indexable at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+    
+    if right_type != "int":
+        (f"Error. Not integer index for function at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
+    
+    p[0] = ("ReadFunction", ("Ident", p[1], left_type), p[3], "int")
 
 def p_expression_function_app(p):
     'expression : functionMod TkApp expression'
-    p[0] = ("App", p[1], p[3])
+    
+    right_type = p[3][-1]
+    
+    if right_type != "int":
+        (f"Error. Not integer index for function at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
+    
+    p[0] = ("ReadFunction", p[1], p[3], "int")
 
 def p_function_mod(p):
     '''functionMod : functionMod TkOpenPar twopoints TkClosePar
@@ -209,12 +345,24 @@ def p_function_mod(p):
 
 def p_twopoints(p):
     '''twopoints : expression TkTwoPoints expression'''
+    
+    left_type = p[1][-1]
+    right_type = p[3][-1]
+    if left_type != "int":
+        print(f"Expected expression of type int at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) - 1}")
+        sys.exit(1)
+    if right_type != "int":
+        print(f"Expected expression of type int at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
+        sys.exit(1)
+    
     p[0] = ("TwoPoints", p[1], p[3])
     
 
 def p_expression_id(p):
     'expression : TkId'
-    p[0] = "Ident: " + p[1]
+    
+    type = table.lookup(p[1], p.lineno(1), find_column(source_code, p.slice[1]))
+    p[0] = ("Ident", p[1], type)
     
 
 def p_expression_par(p):
@@ -233,7 +381,7 @@ def p_sum_string(p):
     '''string : string TkPlus string
                 | expression TkPlus string
                 | string TkPlus expression'''
-    p[0] = ("Plus", p[1], p[3])
+    p[0] = ("Concat", p[1], p[3])
 
 def p_expression_literal(p):
     '''expression : TkNum
@@ -241,11 +389,11 @@ def p_expression_literal(p):
                   | TkFalse'''
     t = p.slice[1].type
     if t == "TkTrue":
-        p[0] = ("Literal: " + p[1])
+        p[0] = ("Literal", p[1], "bool")
     elif t == "TkFalse":
-        p[0] = ("Literal: " + p[1])
+        p[0] = ("Literal", p[1], "bool")
     else:
-        p[0] = ("Literal: "+ p[1])
+        p[0] = ("Literal", p[1], "int")
 # -----------------------
 # --- Vacío y errores ---
 # -----------------------
@@ -279,31 +427,6 @@ def decorate_comma_node(node, table):
     else:
         # es un literal o ident
         return context_analysis(node, table)
-
-class SymbolTable:
-    def __init__(self, parent=None):
-        self.parent = parent
-        self.symbols = {}  # nombre -> tipo
-
-    def declare(self, name, type_, lineno=None):
-        if name in self.symbols:
-            print(f"Variable {name} is already declared in the block at line {lineno}")
-            sys.exit(1)
-        self.symbols[name] = type_
-
-    def lookup(self, name, lineno=None, column=None):
-        if name in self.symbols:
-            return self.symbols[name]
-        elif self.parent:
-            return self.parent.lookup(name, lineno, column)
-        else:
-            print(f"Variable not declared at line {lineno} and column {column}")
-            sys.exit(1)
-
-    def print_table(self, indent=0):
-        print("-" * indent + "Symbols Table")
-        for name, type_ in self.symbols.items():
-            print("-" * (indent+1) + f"variable: {name} | type: {type_}")
 
 def context_analysis(ast, table=None):
     """
@@ -510,11 +633,29 @@ def get_type(node, table):
     # print(f"Node type not recognized: {node}")
     return None
 
+
+operators = ["Plus", "Minus", "Mult", "Equal", "NotEqual", "Leq", "Less", "Geq", "Greater", "And", "Or", "Not"]
+
 def print_ast(ast, indent=0):
     if isinstance(ast, tuple):
-        print("-" * indent + str(ast[0]))
-        for child in ast[1:]:
-            print_ast(child, indent+1)
+        
+        match ast[0]:
+            case 'Literal':
+                print(f"{"-" * indent}Literal: {ast[1]} | type: {ast[-1]}")
+            
+            case 'Ident':
+                print(f"{"-" * indent}Ident: {ast[1]} | type: {ast[-1]}")
+            
+            case operator if operator in operators:
+                print(f"{"-" * indent}{operator} | type: {ast[-1]}")
+                
+                for child in ast[1:-1]:
+                    print_ast(child, indent+1)
+                
+            case _:
+                print("-" * indent + str(ast[0]))
+                for child in ast[1:]:
+                    print_ast(child, indent+1)
     elif isinstance(ast, SymbolTable):
         ast.print_table(indent)
     else:
@@ -534,9 +675,9 @@ if __name__ == '__main__':
 
     parser = yacc.yacc()
     result = parser.parse(source_code, lexer=lexer)
-    # print_ast(result)
+    print_ast(result)
 
-    print("\n--- Análisis de contexto ---")
-    decorated = context_analysis(result)
-    print("\n--- AST Decorado ---")
-    print_ast(decorated)
+    #print("\n--- Análisis de contexto ---")
+    #decorated = context_analysis(result)
+    #print("\n--- AST Decorado ---")
+    #print_ast(decorated)
