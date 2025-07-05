@@ -1,5 +1,5 @@
 # Traductores e Interpretadores
-# Etapa 2 del Proyecto
+# Etapa 3 del Proyecto
 # Elaborado por: Mauricio Fragachan 20-10265
 #                Jesus Gutierrez 20-10332
 
@@ -45,7 +45,7 @@ class SymbolTable:
         elif self.parent:
             return self.parent.lookup(name, lineno, column)
         else:
-            print(f"Variable not declared at line {lineno} and column {column}")
+            print(f"Variable {name} not declared at line {lineno} and column {column}")
             sys.exit(1)
 
     def print_table(self, indent=0):
@@ -56,7 +56,7 @@ class SymbolTable:
             else:
                 print("-" * (indent) + f"variable: {name} | type: {type_[0][0]}[..{type_[0][1]}]")
                 
-                
+# Tabla de Simbolos global       
 global_table = SymbolTable()
 table = global_table
 # ----------------------------
@@ -65,14 +65,14 @@ table = global_table
 
 def p_program(p):
     '''program : new_block declarations TkSemicolon instructions TkCBlock
-                | TkOBlock instructions TkCBlock'''
+                | new_block instructions TkCBlock'''
     global table
     
     if len(p) == 6:
         p[0] = ("Block", ("Symbols Table", table), p[4])
     else:
         p[0] = ("Block", ("Symbols Table"), p[2])
-        
+    table = table.parent
         
 def p_new_block(p):
     '''new_block : TkOBlock'''
@@ -117,14 +117,12 @@ def p_id(p):
 def p_expression_list(p):
     '''expressionlist : expressionlist TkComma expression
                         | expression TkComma expression'''
-    # if len(p) == 4:
-        
     type = p[3][-1]
     if type != "int":
         print(f"There is no integer list at line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
         sys.exit(1)
         
-    p[0] = ("Comma", p[1], p[3], "int") 
+    p[0] = ("Comma", p[1], p[3], "int", count_comma_elements(p[1])) 
 
 # ---------------------
 # --- Instrucciones ---
@@ -146,6 +144,7 @@ def p_instruction(p):
                    | program'''
     p[0] = p[1]
 
+# Falta por pulir pero funciona por ahora
 def p_assignment(p):
     '''instruction : TkId TkAsig expression
                     | TkId TkAsig expressionlist
@@ -153,34 +152,28 @@ def p_assignment(p):
                     
     left_type = table.lookup(p[1], p.lineno(1), find_column(source_code, p.slice[1]))
     right_type = p[3][-1]
-    # if left_type[0] == "function":
-    #     if int(left_type[1]) + 1 != count_comma_elements(p[3]) and p[3][0] == "Comma":
-    #         print(f"It is expected a list of length {left_type[1]} at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
-    #         sys.exit(1)
-    #     elif right_type != "function":
-    #         print(f"Type error. Variable {p[1]} has different type than expression at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
-    #         sys.exit(1)
-    
+
     if left_type != right_type:    
+        if left_type[0] != "function" or left_type[1] != "0" or right_type != "int":
         
-        if left_type[0] == "function":
+            if left_type[0] == "function":
+                
+                if (p[3][0] != "Comma" and right_type != "function"):
+                    print(f"Type error. Variable {p[1]} has different type than expression at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+                    sys.exit(1)
+                
+                elif int(left_type[1]) + 1 != count_comma_elements(p[3]) and p[3][0] == "Comma":
+                    print(f"It is expected a list of length {int(left_type[1]) + 1} at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
+                    sys.exit(1)
+                
+            elif p[3][-2] == "function" and left_type != "function" and p.slice[3].type == "functionMod" :
+                
+                print(f"Variable {p[1]} is expected to be a function at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+                sys.exit(1)
             
-            if p[3][0] != "Comma" and right_type != "function":
+            else:
                 print(f"Type error. Variable {p[1]} has different type than expression at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
                 sys.exit(1)
-            
-            elif int(left_type[1]) + 1 != count_comma_elements(p[3]) and p[3][0] == "Comma":
-                print(f"It is expected a list of length {int(left_type[1]) + 1} at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
-                sys.exit(1)
-        
-        elif right_type[0] == "function" and left_type != "function" and p.slice[3].type == "functionMod" :
-            
-            print(f"Variable {p[1]} is expected to be a function at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
-            sys.exit(1)
-        
-        else:
-            print(f"Type error. Variable {p[1]} has different type than expression at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
-            sys.exit(1)
     elif p[3][0] == "Comma" and left_type == "int":
         print(f"Type error. Variable {p[1]} has different type than expression at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
         sys.exit(1)
@@ -275,7 +268,7 @@ def p_expression_binoperators(p: list):
                 sys.exit(1)
             p[0] = ("Equal", p[1], p[3], "bool")
         case '<>':
-            if left_type != "int" or right_type != "int":
+            if left_type != right_type:
                 print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
                 sys.exit(1)
             p[0] = ("NotEqual", p[1], p[3], "bool")
@@ -451,25 +444,6 @@ def count_comma_elements(node):
     else:
         return 1
 
-def check_type(node, expected, table):
-    typ = get_type(node, table)
-    # print(f"Checking type: {typ} against expected: {expected}")
-    if typ != expected:
-        print(f"Type error: expected {expected}")
-        sys.exit(1)
-
-def get_type(node, table):
-    # print(f"Getting type for node: {node}")
-    if isinstance(node, str):
-        if "| type: " in node:
-            # print(f"Identified type: {node.split('| type: ')[-1]}")
-            return node.split("| type: ")[-1]
-    elif isinstance(node, tuple):
-        return get_type(node[0], table)
-        
-    # print(f"Node type not recognized: {node}")
-    return None
-
 
 operators = ["Plus", "Minus", "Mult", "Equal", "NotEqual", "Leq", "Less", "Geq", "Greater", "And", "Or", "Not", "ReadFunction", "WriteFunction", "Concat"]
 
@@ -488,14 +462,18 @@ def print_ast(ast, indent=0):
                     print(f"{"-" * indent}Ident: {ast[1]} | type: {ast[-1]}")
             
             case operator if operator in operators:
-                print(f"{"-" * indent}{operator} | type: {ast[-1]}")
                 
+                if operator == "WriteFunction":
+                    print(f"{"-" * indent}{operator} | type: {ast[-1][0]}[..{ast[-1][1]}]")
+                else:
+                    print(f"{"-" * indent}{operator} | type: {ast[-1]}")
+                    
                 for child in ast[1:-1]:
                     print_ast(child, indent+1)
 
             case "Comma":
-                print(f"{indent}{ast[0]} | type: {ast[-1][0]} with length={ast[-1][1]}")
-                for child in ast[1:-1]:
+                print(f"{"-" * indent}Comma | type: function with length={int(ast[-1]) + 1}")
+                for child in ast[1:-2]:
                     print_ast(child, indent + 1)
             
             case _:
@@ -522,8 +500,3 @@ if __name__ == '__main__':
     parser = yacc.yacc()
     result = parser.parse(source_code, lexer=lexer)
     print_ast(result)
-
-    #print("\n--- Análisis de contexto ---")
-    #decorated = context_analysis(result)
-    #print("\n--- AST Decorado ---")
-    #print_ast(decorated)
