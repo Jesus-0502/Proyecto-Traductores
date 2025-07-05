@@ -57,27 +57,30 @@ class SymbolTable:
                 print("-" * (indent) + f"variable: {name} | type: {type_[0][0]}[..{type_[0][1]}]")
                 
                 
-table = SymbolTable()
-
+global_table = SymbolTable()
+table = global_table
 # ----------------------------
 # -- Reglas del programa principal --
 # ----------------------------
 
 def p_program(p):
-    '''program : TkOBlock declarations TkSemicolon instructions TkCBlock
+    '''program : new_block declarations TkSemicolon instructions TkCBlock
                 | TkOBlock instructions TkCBlock'''
-    # global table
-    # parent_table = copy.deepcopy(table)
-    
-    # # Crear nueva tabla de símbolos para este bloque
-    # table = copy.deepcopy(SymbolTable(parent=parent_table))
+    global table
     
     if len(p) == 6:
         p[0] = ("Block", ("Symbols Table", table), p[4])
     else:
         p[0] = ("Block", ("Symbols Table"), p[2])
         
-    # table = parent_table
+        
+def p_new_block(p):
+    '''new_block : TkOBlock'''
+    global table
+    
+    new_table = SymbolTable(parent=table)
+    table = new_table
+
 # ---------------------
 # --- Declaraciones ---
 # ---------------------
@@ -415,7 +418,7 @@ def p_sum_string(p):
     '''string : string TkPlus string
                 | expression TkPlus string
                 | string TkPlus expression'''
-    p[0] = ("Concat", p[1], p[3])
+    p[0] = ("Concat", p[1], p[3], "String")
 
 def p_expression_literal(p):
     '''expression : TkNum
@@ -468,7 +471,7 @@ def get_type(node, table):
     return None
 
 
-operators = ["Plus", "Minus", "Mult", "Equal", "NotEqual", "Leq", "Less", "Geq", "Greater", "And", "Or", "Not", "ReadFunction"]
+operators = ["Plus", "Minus", "Mult", "Equal", "NotEqual", "Leq", "Less", "Geq", "Greater", "And", "Or", "Not", "ReadFunction", "WriteFunction", "Concat"]
 
 def print_ast(ast, indent=0):
     if isinstance(ast, tuple):
@@ -489,7 +492,12 @@ def print_ast(ast, indent=0):
                 
                 for child in ast[1:-1]:
                     print_ast(child, indent+1)
-                
+
+            case "Comma":
+                print(f"{indent}{ast[0]} | type: {ast[-1][0]} with length={ast[-1][1]}")
+                for child in ast[1:-1]:
+                    print_ast(child, indent + 1)
+            
             case _:
                 print("-" * indent + str(ast[0]))
                 for child in ast[1:]:
