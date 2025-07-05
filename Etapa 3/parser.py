@@ -6,6 +6,7 @@
 import sys
 import ply.yacc as yacc
 from lexer import tokens, lexer, find_column
+import copy
 
 
 # -------------------------
@@ -34,13 +35,13 @@ class SymbolTable:
 
     def declare(self, name, type_, lineno=None):
         if name in self.symbols:
-            print(f"Variable {name} is already declared in the block at line {lineno}")
+            print(f"Variable {name} is already declared in the block at line {self.symbols[name][1]}")
             sys.exit(1)
-        self.symbols[name] = type_
+        self.symbols[name] = (type_, lineno)
 
     def lookup(self, name, lineno=None, column=None):
         if name in self.symbols:
-            return self.symbols[name]
+            return self.symbols[name][0]
         elif self.parent:
             return self.parent.lookup(name, lineno, column)
         else:
@@ -50,9 +51,14 @@ class SymbolTable:
     def print_table(self, indent=0):
         
         for name, type_ in self.symbols.items():
-            print("-" * (indent+1) + f"variable: {name} | type: {type_}")
-
+            if type_[0][0] != "function":
+                print("-" * (indent) + f"variable: {name} | type: {type_[0]}")
+            else:
+                print("-" * (indent) + f"variable: {name} | type: {type_[0][0]}[..{type_[0][1]}]")
+                
+                
 table = SymbolTable()
+
 # ----------------------------
 # -- Reglas del programa principal --
 # ----------------------------
@@ -60,14 +66,18 @@ table = SymbolTable()
 def p_program(p):
     '''program : TkOBlock declarations TkSemicolon instructions TkCBlock
                 | TkOBlock instructions TkCBlock'''
-    #global table
-    #table = SymbolTable(parent=table)
+    # global table
+    # parent_table = copy.deepcopy(table)
+    
+    # # Crear nueva tabla de símbolos para este bloque
+    # table = copy.deepcopy(SymbolTable(parent=parent_table))
     
     if len(p) == 6:
         p[0] = ("Block", ("Symbols Table", table), p[4])
     else:
         p[0] = ("Block", ("Symbols Table"), p[2])
-
+        
+    # table = parent_table
 # ---------------------
 # --- Declaraciones ---
 # ---------------------
@@ -107,12 +117,11 @@ def p_expression_list(p):
     # if len(p) == 4:
         
     type = p[3][-1]
-    print(p[1][-2])
     if type != "int":
         print(f"There is no integer list at line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
         sys.exit(1)
         
-    p[0] = ("Comma", p[1], p[3]) 
+    p[0] = ("Comma", p[1], p[3], "int") 
 
 # ---------------------
 # --- Instrucciones ---
@@ -139,12 +148,29 @@ def p_assignment(p):
                     | TkId TkAsig expressionlist
                     | TkId TkAsig functionMod'''
                     
-    left_type = table.lookup(p[1])
+    left_type = table.lookup(p[1], p.lineno(1), find_column(source_code, p.slice[1]))
     right_type = p[3][-1]
+    # if left_type[0] == "function":
+    #     if int(left_type[1]) + 1 != count_comma_elements(p[3]) and p[3][0] == "Comma":
+    #         print(f"It is expected a list of length {left_type[1]} at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
+    #         sys.exit(1)
+    #     elif right_type != "function":
+    #         print(f"Type error. Variable {p[1]} has different type than expression at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+    #         sys.exit(1)
     
-    if left_type != right_type:
+    if left_type != right_type:    
         
-        if right_type[0] == "function" and left_type != "function":
+        if left_type[0] == "function":
+            
+            if p[3][0] != "Comma" and right_type != "function":
+                print(f"Type error. Variable {p[1]} has different type than expression at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+                sys.exit(1)
+            
+            elif int(left_type[1]) + 1 != count_comma_elements(p[3]) and p[3][0] == "Comma":
+                print(f"It is expected a list of length {int(left_type[1]) + 1} at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
+                sys.exit(1)
+        
+        elif right_type[0] == "function" and left_type != "function" and p.slice[3].type == "functionMod" :
             
             print(f"Variable {p[1]} is expected to be a function at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
             sys.exit(1)
@@ -152,16 +178,15 @@ def p_assignment(p):
         else:
             print(f"Type error. Variable {p[1]} has different type than expression at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
             sys.exit(1)
+    elif p[3][0] == "Comma" and left_type == "int":
+        print(f"Type error. Variable {p[1]} has different type than expression at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+        sys.exit(1)
+        
     else:
         if  right_type[0] == "function" and left_type[0] == "function":
             if right_type[1] != left_type[1]:
                 print(f"It is expected a list of length {left_type[1]} at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
                 sys.exit(1)
-    
-    
-    
-    
-    
     
     p[0] = ("Asig", ("Ident", p[1], left_type), p[3])
 
@@ -242,7 +267,7 @@ def p_expression_binoperators(p: list):
                 sys.exit(1)
             p[0] = ("Mult", p[1], p[3], "int")
         case '==':
-            if left_type != "int" or right_type != "int":
+            if left_type != right_type:
                 print(f"Type error in line {p.lineno(2)} and column {find_column(source_code, p.slice[2])}")
                 sys.exit(1)
             p[0] = ("Equal", p[1], p[3], "bool")
@@ -313,14 +338,16 @@ def p_expression_dotaccess(p):
 def p_expression_app(p):
     'expression : TkId TkApp expression'
     
-    left_type = table.lookup(p[1])
+    left_type = table.lookup(p[1], p.lineno(1), find_column(source_code, p.slice[1]))
     right_type = p[3][-1]
     
-    if left_type != "function":
+    if left_type[0] != "function":
         print(f"Error. {p[1]} is not indexable at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+        sys.exit(1)
     
     if right_type != "int":
-        (f"Error. Not integer index for function at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
+        print(f"Error. Not integer index for function at line {p.lineno(2)} and column {find_column(source_code, p.slice[2]) + 1}")
+        sys.exit(1)
     
     p[0] = ("ReadFunction", ("Ident", p[1], left_type), p[3], "int")
 
@@ -337,10 +364,17 @@ def p_expression_function_app(p):
 def p_function_mod(p):
     '''functionMod : functionMod TkOpenPar twopoints TkClosePar
                     | TkId TkOpenPar twopoints TkClosePar'''
+                    
+    
     if p.slice[1].type == 'functionMod':
-        p[0] = ("WriteFunction", p[1], p[3])
+        type = p[1][-1]
+        p[0] = ("WriteFunction", p[1], p[3], type)
     else:
-        p[0] = ("WriteFunction", "Ident: " + p[1], p[3])
+        type = table.lookup(p[1], p.lineno(1), find_column(source_code, p.slice[1]))
+        if type[0] != "function":
+            print(f"The function modification operator is use in not function variable at line {p.lineno(1)} and column {find_column(source_code, p.slice[1])}")
+            sys.exit(1)
+        p[0] = ("WriteFunction", ("Ident", p[1], type), p[3], type)
 
 
 def p_twopoints(p):
@@ -414,206 +448,6 @@ def count_comma_elements(node):
     else:
         return 1
 
-def decorate_comma_node(node, table):
-    """
-    Decora recursivamente un nodo Comma:
-    - Agrega el tipo: 'function with length=N' según el número de elementos
-    """
-    if isinstance(node, tuple) and node[0] == "Comma":
-        left = decorate_comma_node(node[1], table)
-        right = decorate_comma_node(node[2], table)
-        total_length = count_comma_elements(node)
-        return ("Comma | type: function with length=" + str(total_length), left, right)
-    else:
-        # es un literal o ident
-        return context_analysis(node, table)
-
-def context_analysis(ast, table=None):
-    """
-    Recibe el AST, decora tipos y hace chequeo semántico.
-    """
-    if table is None:
-        table = SymbolTable()
-
-    if isinstance(ast, tuple):
-        node_type = ast[0]
-        if node_type == "Block":
-            new_table = SymbolTable(parent=table)
-            if len(ast) == 3:
-                _, declare_node, instr_node = ast
-                process_declarations(declare_node, new_table)
-                # new_table.print_table(indent=1)
-                instr = context_analysis(instr_node, new_table)
-                return ("Block", new_table, instr)
-            else:
-                _, instr_node = ast
-                # new_table.print_table(indent=1)
-                instr = context_analysis(instr_node, new_table)
-                return ("Block", new_table, instr)
-
-        elif node_type == "Sequencing":
-            left = context_analysis(ast[1], table)
-            right = context_analysis(ast[2], table)
-            return ("Sequencing", left, right)
-
-        elif node_type == "Asig":
-            ident_str = ast[1].split(": ")[-1]
-            var_type = table.lookup(ident_str)
-
-            # Si la variable es una función
-            if var_type.startswith("function[.."):
-                dimension = int(var_type.split("..")[1][:-1])+1
-
-                expr_node = ast[2]
-                if expr_node[0] == "Comma":
-                    list_length = count_comma_elements(expr_node)
-                    if list_length != dimension:
-                        print(f"It is expected a list of length {dimension} at line {getattr(ast, 'lineno', '?')} and column {getattr(ast, 'lexpos', '?')}")
-                        sys.exit(1)
-
-                    decorated_comma = decorate_comma_node(expr_node, table)
-                    return ("Asig", ast[1] + " | type: " + var_type, decorated_comma)
-
-                else:
-                    # error si tratas de asignar algo que no es lista
-                    print(f"Type error. Variable {ident_str} has different type than expression at line {getattr(ast, 'lineno', '?')} and column {getattr(ast, 'lexpos', '?')}")
-                    sys.exit(1)
-            
-            # print(f"Assigning to variable {ident_str} of type {var_type}")
-            expr = context_analysis(ast[2], table)
-            # print(f"Processing assignment: {ident_str} := {expr}")
-            expr_type = get_type(expr, table)
-            # print(f"Expression type: {expr_type}")
-            if expr_type != var_type:
-                print(f"Type error. Variable {ident_str} has different type than expression")
-                sys.exit(1)
-            return ("Asig", f"Ident: {ident_str} | type: {var_type}", expr)
-
-        elif node_type in {"Plus", "Minus", "Mult"}:
-            left = context_analysis(ast[1], table)
-            if node_type == "Minus" and len(ast) == 2:
-                # Unary minus
-                check_type(left, "int", table)
-                return (f"{node_type} | type: int", left)
-            
-            right = context_analysis(ast[2], table)
-            if node_type == "Plus":
-                # print(f"Processing addition: {left} + {right}")
-                type_left = get_type(left, table)
-                type_right = get_type(right, table)
-                # print(f"Left type: {type_left}, Right type: {type_right}")
-                if type_left == "string" or type_right == "string":
-                    return (f"Concat | type: string", left, right)
-            check_type(left, "int", table)
-            check_type(right, "int", table)
-            return (f"{node_type} | type: int", left, right)
-
-        elif node_type in {"And", "Or", "Not"}:
-            left = context_analysis(ast[1], table)
-            check_type(left, "bool", table)
-            if node_type == "Not":
-                return (f"{node_type} | type: bool", left)
-            right = context_analysis(ast[2], table)
-            check_type(right, "bool", table)
-            return (f"{node_type} | type: bool", left, right)
-
-        elif node_type in {"Equal", "NotEqual", "Less", "Greater", "Leq", "Geq"}:
-            left = context_analysis(ast[1], table)
-            right = context_analysis(ast[2], table)
-            check_type(left, "int", table)
-            check_type(right, "int", table)
-            return (f"{node_type} | type: bool", left, right)
-
-        elif node_type == "Print":
-            expr = context_analysis(ast[1], table)
-            return ("Print", expr)
-
-        elif node_type == "If":
-            guards = process_guards(ast[1], table)
-            return ("If", guards)
-
-        elif node_type == "While":
-            _, then_node = ast
-            cond = context_analysis(then_node[1], table)
-            # print(f"Processing while condition: {cond}")
-            check_type(cond, "bool", table)
-            instr = context_analysis(then_node[2], table)
-            return ("While", ("Then", cond, instr))
-
-        elif node_type == "App":
-            base = context_analysis(ast[1], table)
-            index = context_analysis(ast[2], table)
-            # table.lookup(ast[1].split(": ")[-1])  # Check if base is declared
-            # dimension = int(base.split("..")[1][:-1])+1
-            # index_value = ast[2].split(": ")[-1]
-            # if index[0] == "Literal":
-            #     index_value = int(index[1].split(": ")[-1])
-            #     if index_value < 0 or index_value >= dimension:
-            #         print(f"Function index out of bounds: {index_value}")
-            #         sys.exit(1)
-            return ("ReadFunction | type: int", base, index)
-
-        elif node_type == "Comma":
-            left = context_analysis(ast[1], table)
-            right = context_analysis(ast[2], table)
-            total_length = count_comma_elements(ast)
-            return ("Comma | type: function with length=" + str(total_length), left, right)
-
-        elif node_type == "WriteFunction":
-            func_name = ast[1].split(": ")[-1]
-            # print(f"Processing function write: {func_name}")
-            if func_name.startswith("function"):
-                return ("WriteFunction", func_name, ast[2])
-            else:
-                var_type = table.lookup(func_name)
-                return ("WriteFunction", f"Ident: {func_name} | type: {var_type}", ast[2])
-
-        
-    elif isinstance(ast, str):
-        # print(f"Processing string: {ast}")
-        if ast.startswith("Literal"):
-            # print(f"Processing literal: {ast}")
-            value = ast.split(": ")[-1]
-            # print(f"Identified literal value: {value}")
-            return f"Literal: {value} | type: {'bool' if value in ['true','false'] else 'int'}"
-
-        elif ast.startswith("Ident"):
-            name = ast.split(": ")[-1]
-            var_type = table.lookup(name)
-            # print(f"Identified variable {name} of type {var_type}")
-            return f"Ident: {name} | type: {var_type}"
-        
-        elif ast.startswith("String"):
-            value = ast.split("String: ")[-1]
-            # print(f"Identified string: {value}")
-            return f"String: {value} | type: string"
-
-    else:
-        return ast
-
-def process_declarations(declare_node, table):
-    if declare_node[0] == "Declare":
-        process_declarations(declare_node[1], table)
-    elif declare_node[0] == "Sequencing":
-        process_declarations(declare_node[1], table)
-        process_declarations(declare_node[2], table)
-    elif declare_node[0] == "DeclareVar":
-        _, names, type_ = declare_node
-        for name in names:
-            table.declare(name, type_)
-
-
-def process_guards(guards, table):
-    if guards[0] == "Guard":
-        left = process_guards(guards[1], table)
-        right = process_guards(guards[2], table)
-        return ("Guard", left, right)
-    elif guards[0] == "Then":
-        cond = context_analysis(guards[1], table)
-        check_type(cond, "bool", table)
-        instr = context_analysis(guards[2], table)
-        return ("Then", cond, instr)
-
 def check_type(node, expected, table):
     typ = get_type(node, table)
     # print(f"Checking type: {typ} against expected: {expected}")
@@ -634,7 +468,7 @@ def get_type(node, table):
     return None
 
 
-operators = ["Plus", "Minus", "Mult", "Equal", "NotEqual", "Leq", "Less", "Geq", "Greater", "And", "Or", "Not"]
+operators = ["Plus", "Minus", "Mult", "Equal", "NotEqual", "Leq", "Less", "Geq", "Greater", "And", "Or", "Not", "ReadFunction"]
 
 def print_ast(ast, indent=0):
     if isinstance(ast, tuple):
@@ -644,7 +478,11 @@ def print_ast(ast, indent=0):
                 print(f"{"-" * indent}Literal: {ast[1]} | type: {ast[-1]}")
             
             case 'Ident':
-                print(f"{"-" * indent}Ident: {ast[1]} | type: {ast[-1]}")
+                
+                if ast[-1][0] == "function":
+                    print(f"{"-" * indent}Ident: {ast[1]} | type: {ast[-1][0]}[..{ast[-1][1]}]")
+                else:
+                    print(f"{"-" * indent}Ident: {ast[1]} | type: {ast[-1]}")
             
             case operator if operator in operators:
                 print(f"{"-" * indent}{operator} | type: {ast[-1]}")
