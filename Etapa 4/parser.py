@@ -496,6 +496,8 @@ cons = lambda x:lambda y:lambda f: f(x)(y)
 head = lambda p: p(true)
 tail = lambda p:p(false)
 apply = Z(lambda g:lambda f:lambda x:f if x==nil else (g(f(head(x)))(tail(x))))
+lift_do=lambda exp:lambda f:lambda g: lambda x: g(f(x)) if (exp(x)) else x
+do=lambda exp:lambda f:Z(lift_do(exp)(f))
 """
 
 def translate_to_lambda(ast):
@@ -505,13 +507,8 @@ def translate_to_lambda(ast):
     - definición de program
     - llamada final a apply e impresión
     """
-    symbols = extract_symbols(ast)
-
-    var_names = {}
-    n = len(symbols)
-    for i in range(0,n):
-        var_names[symbols[i]] = f"x{i+1}"
-        
+    var_names = extract_symbols(ast)
+    print(var_names)
     
 
     # Recolectar las asignaciones en orden
@@ -521,7 +518,7 @@ def translate_to_lambda(ast):
     body = build_program_body(assignments, var_names)
 
     # Construir la lista inicial cons(0)(cons(0)...(nil))
-    init_list = build_init_list(n)
+    init_list = build_init_list(var_names)
 
     # Construir apply final para imprimir las variables
     apply_vars = ": lambda ".join(key for key,_ in reversed(var_names.items()))
@@ -561,13 +558,15 @@ def build_program_body(assignments, var_names):
     acc = "x1"
     for asig in assignments:
         expr_node = asig[2]
-        
+        print(expr_node)
         expr_code = translate_expr(expr_node)
-        
+        print(expr_code)
         for key, value in var_names.items():
-            expr_code = expr_code.replace(key, value)
+            if key in expr_code:
+                expr_code = expr_code.replace(key, value[0])
+            
         
-        lam_vars = ": lambda ".join(f"{value}" for _, value in reversed(var_names.items()))
+        lam_vars = ": lambda ".join(f"{value[0]}" for _, value in reversed(var_names.items()))
         cons_chain = build_cons_chain(expr_code, asig, var_names)
         apply_part = f"(apply(lambda {lam_vars}: {cons_chain}))({acc})"
         acc = apply_part
@@ -579,13 +578,19 @@ def build_cons_chain(expr_code, asig, var_names):
     """
     
     var_change = asig[1][1]
-    #print("Esta es la variable a cambiar: ", var_change)
+    print("Esta es la variable a cambiar:", var_change)
     code = f"nil"
     for key, value in var_names.items():
-        if key == var_change:
+        if isinstance(key, tuple):
+            if key[0] == var_change:
+                code = f"cons({expr_code})({code})"
+            else:
+                code = f"cons({value[0]})({code})"
+            
+        elif key == var_change:
             code = f"cons({expr_code})({code})"
         else:
-            code = f"cons({value})({code})"
+            code = f"cons({value[0]})({code})"
         print(code)
     return code
 
@@ -593,6 +598,9 @@ def translate_expr(node):
     """
     Traduce una expresión a Python.
     """
+    # if lista is None:
+    #     lista = []
+    
     if isinstance(node, tuple):
         tag = node[0]
         if tag == "Literal":
@@ -612,27 +620,62 @@ def translate_expr(node):
             else:
                 child = translate_expr(node[1])
                 return f"-{child}"
-    return "0"
+        elif tag == "Comma":
+            left = translate_expr(node[1])
+            right = translate_expr(node[2])
+            result = []
+            if left != "":
+                result += [int(left)] if isinstance(left, str) else left
+            if right != "":
+                result += [int(right)] if isinstance(right, str) else right
+            return result
+        elif tag == "ReadFunction":
+            ident = translate_expr(node[1])
+            index = translate_expr(node[2])
+            return f"{ident}[{index}]"
+    return ""
 
-def build_init_list(n):
+def build_init_list(var_names):
     """
     cons(0)(cons(0)...(nil))
     """
     code = "nil"
-    for _ in range(n):
-        code = f"cons(0)({code})"
+    for key, value in var_names.items():
+        if value[1] == "function":
+            list = [] 
+            for i in range(int(value[2])+1):
+                list.append(0)
+            code = f"cons({list})({code})"
+        elif value[1] == "bool":        
+            code = f"cons(False)({code})"
+        else:
+            code = f"cons(0)({code})"   
     return code
 
 def extract_symbols(ast):
     """
     Extrae las variables declaradas del primer bloque.
     """
+    var_names = {}
+    i = 1
     if isinstance(ast, tuple) and ast[0] == "Block":
         symbols_node = ast[1]
+        symbols_list = []
         if isinstance(symbols_node, tuple) and symbols_node[0] == "Symbols Table":
-            table = symbols_node[1]
-            return list(table.symbols.keys())
-    return []
+            table = symbols_node[1].symbols
+            for name, type_ in table.items():
+                if type_[0][0] != "function":
+                    
+                    symbols_list += [(name, type_[0])]
+                    var_names[name] = (f"x{i}", type_[0] )
+
+                else:
+                    symbols_list += [(name, type_[0][1])]
+                    var_names[name] = (f"x{i}", type_[0][0], type_[0][1])
+                i += 1
+                
+            return var_names
+    return {}
 
 # -----------------------
 # Ejecución principal

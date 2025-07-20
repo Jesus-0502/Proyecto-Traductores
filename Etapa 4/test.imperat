@@ -1,7 +1,9 @@
 {
     int a, b, c;
-    b := a+b+-c*-a*b-a-b;
-    a := 12;
-    c := a+1
+    bool d, e;
+    function[..2] f;
+    f := 3,2,1;
+    d := 3 <= 4
+    //a := 12
     
 }
