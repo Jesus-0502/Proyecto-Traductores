@@ -7,6 +7,7 @@ import sys
 import ply.yacc as yacc
 from lexer import tokens, lexer, find_column
 import copy
+import re
 
 
 # -------------------------
@@ -540,7 +541,7 @@ def collect_assignments(node):
     if isinstance(node, tuple):
         if node[0] == "Sequencing":
             return collect_assignments(node[1]) + collect_assignments(node[2])
-        elif node[0] == "Asig":
+        elif node[0] in ("Asig", "If"):
             #print([node])
             return [node]
         elif node[0] == "Block":
@@ -556,20 +557,18 @@ def build_program_body(assignments, var_names):
     n = len(var_names)
     print(var_names)
     acc = "x1"
-    for asig in assignments:
-        expr_node = asig[2]
-        print(expr_node)
-        expr_code = translate_expr(expr_node)
-        print(expr_code)
-        for key, value in var_names.items():
-            if key in expr_code:
+    for stmt in assignments:
+        if stmt[0] == "If":
+            acc = translate_if(stmt, acc, var_names)
+        else:  # Asig
+            expr_node = stmt[2]
+            expr_code = translate_expr(expr_node)
+            for key, value in var_names.items():
                 expr_code = expr_code.replace(key, value[0])
-            
-        
-        lam_vars = ": lambda ".join(f"{value[0]}" for _, value in reversed(var_names.items()))
-        cons_chain = build_cons_chain(expr_code, asig, var_names)
-        apply_part = f"(apply(lambda {lam_vars}: {cons_chain}))({acc})"
-        acc = apply_part
+            lam_vars = ": lambda ".join(f"{value[0]}" for _, value in reversed(var_names.items()))
+            cons_chain = build_cons_chain(expr_code, stmt, var_names)
+            apply_part = f"(apply(lambda {lam_vars}: {cons_chain}))({acc})"
+            acc = apply_part
     return acc
 
 def build_cons_chain(expr_code, asig, var_names):
@@ -594,7 +593,7 @@ def build_cons_chain(expr_code, asig, var_names):
         print(code)
     return code
 
-def translate_expr(node):
+def translate_expr(node, isCondition=False):
     """
     Traduce una expresión a Python.
     """
@@ -616,9 +615,13 @@ def translate_expr(node):
                     "Less": "<", "Greater": ">", "Leq": "<=", "Geq": ">=",
                     "Equal": "==", "NotEqual": "!=", "And": "and", "Or": "or"
                 }[tag]
+                if isCondition:
+                    return f"({left} {op} {right})"
                 return f"{left}{op}{right}"
             else:
                 child = translate_expr(node[1])
+                if isCondition:
+                    return f"- {child}"
                 return f"-{child}"
         elif tag == "Comma":
             left = translate_expr(node[1])
@@ -676,6 +679,50 @@ def extract_symbols(ast):
                 
             return var_names
     return {}
+
+def translate_if(stmt, acc, var_names):
+    """
+    Traduce una instrucción if con múltiples guardias, devolviendo:
+    (lambda x1: (body1 if cond1 else (body2 if cond2 else ...)))(acc)
+    """
+    guards = extract_guards(stmt[1])
+    branches = []
+
+    for guard in guards:
+        cond = translate_condition(guard[1], var_names)
+        instrs = collect_assignments(guard[2])
+        body = build_program_body(instrs, var_names)
+        branches.append((cond, body))
+
+    # Encadenar cuerpos y condiciones
+    chain = "x1"  # valor por defecto si ninguna condición se cumple
+    for cond, body in reversed(branches):
+        chain = f"({body} if {cond} else {chain})"
+
+    return f"(lambda x1: {chain})({acc})"
+
+
+def extract_guards(node):
+    """
+    Extrae todas las guardias (Then y Guard anidados) en orden.
+    """
+    if node[0] == "Then":
+        return [node]
+    elif node[0] == "Guard":
+        return extract_guards(node[1]) + extract_guards(node[2])
+    return []
+
+def translate_condition(cond, var_names):
+    """
+    Traduce una condición booleana a la forma:
+    apply(lambda xN: ... lambda x1: COND_EXPR)(x1)
+    """
+    cond_expr = translate_expr(cond, True)
+    # Replace variable names only if they are not part of 'and' or 'or' operators
+    for key, value in var_names.items():
+        cond_expr = re.sub(rf'\b{re.escape(key)}\b', value[0], cond_expr)
+    lam_vars = ": lambda ".join(value[0] for _, value in reversed(var_names.items()))
+    return f"(apply(lambda {lam_vars}: {cond_expr}))(x1)"
 
 # -----------------------
 # Ejecución principal

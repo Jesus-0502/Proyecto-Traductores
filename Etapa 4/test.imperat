@@ -1,9 +1,12 @@
 {
-    int a, b, c;
-    bool d, e;
-    function[..2] f;
-    f := 3,2,1;
-    d := 3 <= 4
-    //a := 12
-    
+    int a,b,c;
+
+    a := 12;
+    b :=24;
+    if a > b and a > 0 -->
+        a := 3
+    [] a < b -->
+        b := 2
+    fi
+
 }
