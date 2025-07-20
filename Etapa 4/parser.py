@@ -541,7 +541,7 @@ def collect_assignments(node):
     if isinstance(node, tuple):
         if node[0] == "Sequencing":
             return collect_assignments(node[1]) + collect_assignments(node[2])
-        elif node[0] in ("Asig", "If"):
+        elif node[0] in ("Asig", "If", "skip"):
             #print([node])
             return [node]
         elif node[0] == "Block":
@@ -560,6 +560,8 @@ def build_program_body(assignments, var_names):
     for stmt in assignments:
         if stmt[0] == "If":
             acc = translate_if(stmt, acc, var_names)
+        elif stmt[0] == "skip":
+            acc = f"(lambda x1: x1)({acc})"
         else:  # Asig
             expr_node = stmt[2]
             expr_code = translate_expr(expr_node)
