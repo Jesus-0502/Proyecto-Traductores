@@ -9,7 +9,7 @@ tail = lambda p:p(false)
 apply = Z(lambda g:lambda f:lambda x:f if x==nil else (g(f(head(x)))(tail(x))))
 
 
-program = (lambda initial: (apply(lambda x3: lambda x2: lambda x1: cons(x2)(cons(x3)(cons(12)(nil)))))((apply(lambda x3: lambda x2: lambda x1: cons(x2)(cons(x3)(cons(((((a + b) + (((c - 0) * (a - 0)) * b)) - a) - b))(nil)))))(initial)))
+program = (lambda x1: (apply(lambda x3: lambda x2: lambda x1: cons(x1+1)(cons(x2)(cons(x1)(nil)))))((apply(lambda x3: lambda x2: lambda x1: cons(x3)(cons(x2)(cons(12)(nil)))))((apply(lambda x3: lambda x2: lambda x1: cons(x3)(cons(x1+x2+-x3*-x1*x2-x1-x2)(cons(x1)(nil)))))(x1))))
 
 result = program(cons(0)(cons(0)(cons(0)(nil))))
 print(apply(lambda c: lambda b: lambda a: {'a': a, 'b': b, 'c': c})(result))

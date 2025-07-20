@@ -506,8 +506,13 @@ def translate_to_lambda(ast):
     - llamada final a apply e impresión
     """
     symbols = extract_symbols(ast)
-    var_names = symbols
-    n = len(var_names)
+
+    var_names = {}
+    n = len(symbols)
+    for i in range(0,n):
+        var_names[symbols[i]] = f"x{i+1}"
+        
+    
 
     # Recolectar las asignaciones en orden
     assignments = collect_assignments(ast)
@@ -519,12 +524,12 @@ def translate_to_lambda(ast):
     init_list = build_init_list(n)
 
     # Construir apply final para imprimir las variables
-    apply_vars = ": lambda ".join(var_names[::-1])
+    apply_vars = ": lambda ".join(key for key,_ in reversed(var_names.items()))
     print_part = "{" + ", ".join([f"'{v}': {v}" for v in var_names]) + "}"
 
     final_code = f"""{COMBINATORS}
 
-program = (lambda initial: {body})
+program = (lambda x1: {body})
 
 result = program({init_list})
 print(apply(lambda {apply_vars}: {print_part})(result))
@@ -539,6 +544,7 @@ def collect_assignments(node):
         if node[0] == "Sequencing":
             return collect_assignments(node[1]) + collect_assignments(node[2])
         elif node[0] == "Asig":
+            #print([node])
             return [node]
         elif node[0] == "Block":
             return collect_assignments(node[-1])
@@ -551,23 +557,36 @@ def build_program_body(assignments, var_names):
     Construye apply(lambda...)(apply(lambda...)(initial))
     """
     n = len(var_names)
-    acc = "initial"
+    print(var_names)
+    acc = "x1"
     for asig in assignments:
         expr_node = asig[2]
+        
         expr_code = translate_expr(expr_node)
-        lam_vars = ": lambda ".join(f"x{i+1}" for i in reversed(range(n)))
-        cons_chain = build_cons_chain(expr_code, n)
+        
+        for key, value in var_names.items():
+            expr_code = expr_code.replace(key, value)
+        
+        lam_vars = ": lambda ".join(f"{value}" for _, value in reversed(var_names.items()))
+        cons_chain = build_cons_chain(expr_code, asig, var_names)
         apply_part = f"(apply(lambda {lam_vars}: {cons_chain}))({acc})"
         acc = apply_part
     return acc
 
-def build_cons_chain(expr_code, n):
+def build_cons_chain(expr_code, asig, var_names):
     """
     cons(xN)(cons(...)(cons(expr_code)(nil)))
     """
-    code = f"cons({expr_code})(nil)"
-    for i in range(n-1):
-        code = f"cons(x{n - i})({code})"
+    
+    var_change = asig[1][1]
+    #print("Esta es la variable a cambiar: ", var_change)
+    code = f"nil"
+    for key, value in var_names.items():
+        if key == var_change:
+            code = f"cons({expr_code})({code})"
+        else:
+            code = f"cons({value})({code})"
+        print(code)
     return code
 
 def translate_expr(node):
@@ -580,18 +599,19 @@ def translate_expr(node):
             return node[1]
         elif tag == "Ident":
             return node[1]
-        elif tag in {"Plus", "Minus", "Mult", "Less", "Greater", "Leq", "Geq", "Equal", "NotEqual", "And", "Or"}:
-            left = translate_expr(node[1])
-            right = translate_expr(node[2])
-            op = {
-                "Plus": "+", "Minus": "-", "Mult": "*",
-                "Less": "<", "Greater": ">", "Leq": "<=", "Geq": ">=",
-                "Equal": "==", "NotEqual": "!=", "And": "and", "Or": "or"
-            }[tag]
-            return f"({left} {op} {right})"
-        elif tag == "Not":
-            child = translate_expr(node[1])
-            return f"(not {child})"
+        elif tag in {"Plus", "Minus", "Mult", "Less", "Greater", "Leq", "Geq", "Equal", "NotEqual", "And", "Or, Not"}:
+            if len(node) == 4:
+                left = translate_expr(node[1])
+                right = translate_expr(node[2])
+                op = {
+                    "Plus": "+", "Minus": "-", "Mult": "*",
+                    "Less": "<", "Greater": ">", "Leq": "<=", "Geq": ">=",
+                    "Equal": "==", "NotEqual": "!=", "And": "and", "Or": "or"
+                }[tag]
+                return f"{left}{op}{right}"
+            else:
+                child = translate_expr(node[1])
+                return f"-{child}"
     return "0"
 
 def build_init_list(n):
