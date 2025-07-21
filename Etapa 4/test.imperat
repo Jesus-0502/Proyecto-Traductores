@@ -1,13 +1,8 @@
 {
-    int a,b,c;
-
-    a := 12;
-    b :=24;
-    skip;
-    if a > b and a > 0 -->
-        a := 3
-    [] a < b -->
-        b := 2
+    bool a, b;
+    
+    if a or true -->
+        b := true
     fi
 
 }

@@ -11,7 +11,7 @@ lift_do=lambda exp:lambda f:lambda g: lambda x: g(f(x)) if (exp(x)) else x
 do=lambda exp:lambda f:Z(lift_do(exp)(f))
 
 
-program = (lambda x1: (lambda x1: ((apply(lambda x3: lambda x2: lambda x1: cons(x3)(cons(x2)(cons(3)(nil)))))(x1) if (apply(lambda x3: lambda x2: lambda x1: (x1>x2 and x1>0)))(x1) else ((apply(lambda x3: lambda x2: lambda x1: cons(x3)(cons(2)(cons(x1)(nil)))))(x1) if (apply(lambda x3: lambda x2: lambda x1: (x1 < x2)))(x1) else x1)))((lambda x1: x1)((apply(lambda x3: lambda x2: lambda x1: cons(x3)(cons(24)(cons(x1)(nil)))))((apply(lambda x3: lambda x2: lambda x1: cons(x3)(cons(x2)(cons(12)(nil)))))(x1)))))
+program = (lambda x1: (lambda x1: ((apply(lambda x2: lambda x1: cons(True)(cons(x1)(nil))))(x1) if (apply(lambda x2: lambda x1: x1 or True))(x1) else x1))(x1))
 
-result = program(cons(0)(cons(0)(cons(0)(nil))))
-print(apply(lambda c: lambda b: lambda a: {'a': a, 'b': b, 'c': c})(result))
+result = program(cons(False)(cons(False)(nil)))
+print(apply(lambda b: lambda a: {'a': a, 'b': b})(result))

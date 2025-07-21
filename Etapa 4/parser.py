@@ -487,7 +487,7 @@ def print_ast(ast, indent=0):
         print("-" * indent + str(ast))
 
 
-# Combinadores y primitivas según la Etapa 4
+# Combinadores
 COMBINATORS = """
 Z = lambda g:(lambda x:g(lambda v:x(x)(v)))(lambda x:g(lambda v:x(x)(v)))
 true = lambda x:lambda y:x
@@ -509,8 +509,6 @@ def translate_to_lambda(ast):
     - llamada final a apply e impresión
     """
     var_names = extract_symbols(ast)
-    print(var_names)
-    
 
     # Recolectar las asignaciones en orden
     assignments = collect_assignments(ast)
@@ -536,13 +534,12 @@ print(apply(lambda {apply_vars}: {print_part})(result))
 
 def collect_assignments(node):
     """
-    Recoge todas las asignaciones (tuplas con tag 'Asig') en orden de aparición.
+    Recoge todas las instrucciones (tuplas con tag 'Asig', 'If', 'skip') en orden de aparición.
     """
     if isinstance(node, tuple):
         if node[0] == "Sequencing":
             return collect_assignments(node[1]) + collect_assignments(node[2])
         elif node[0] in ("Asig", "If", "skip"):
-            #print([node])
             return [node]
         elif node[0] == "Block":
             return collect_assignments(node[-1])
@@ -552,21 +549,27 @@ def collect_assignments(node):
 
 def build_program_body(assignments, var_names):
     """
-    Construye apply(lambda...)(apply(lambda...)(initial))
+    Construye el cuerpo de la instruccion en lambda calculo
     """
-    n = len(var_names)
-    print(var_names)
     acc = "x1"
     for stmt in assignments:
+        # Para la instruccion If
         if stmt[0] == "If":
             acc = translate_if(stmt, acc, var_names)
+        # Para la instruccion skip
         elif stmt[0] == "skip":
             acc = f"(lambda x1: x1)({acc})"
-        else:  # Asig
+        # Para la instrucccion Asig
+        else:  
             expr_node = stmt[2]
             expr_code = translate_expr(expr_node)
+            
+            
+            # Reemplazmos el el nombre de la variable por su correspondencia en lambda calculo
             for key, value in var_names.items():
-                expr_code = expr_code.replace(key, value[0])
+                if key in expr_code:
+                    expr_code = re.sub(rf'\b{re.escape(key)}\b', value[0], expr_code)
+            
             lam_vars = ": lambda ".join(f"{value[0]}" for _, value in reversed(var_names.items()))
             cons_chain = build_cons_chain(expr_code, stmt, var_names)
             apply_part = f"(apply(lambda {lam_vars}: {cons_chain}))({acc})"
@@ -575,40 +578,43 @@ def build_program_body(assignments, var_names):
 
 def build_cons_chain(expr_code, asig, var_names):
     """
-    cons(xN)(cons(...)(cons(expr_code)(nil)))
+    Construye la cadena de cons para la asignacion
     """
-    
+    # Variable que se le está asignando un nuevo valor
     var_change = asig[1][1]
-    print("Esta es la variable a cambiar:", var_change)
     code = f"nil"
     for key, value in var_names.items():
-        if isinstance(key, tuple):
-            if key[0] == var_change:
-                code = f"cons({expr_code})({code})"
-            else:
-                code = f"cons({value[0]})({code})"
-            
-        elif key == var_change:
+        # Si es la variable a cambiar, colocamos la expresion
+        if key == var_change:
             code = f"cons({expr_code})({code})"
         else:
             code = f"cons({value[0]})({code})"
-        print(code)
     return code
 
 def translate_expr(node, isCondition=False):
     """
     Traduce una expresión a Python.
     """
-    # if lista is None:
-    #     lista = []
     
     if isinstance(node, tuple):
+        
         tag = node[0]
+        
+        # Enteros, booleanos, etc
         if tag == "Literal":
-            return node[1]
+            # booleanos
+            if node[1] == 'false' or node[1] == 'true':
+                return node[1].capitalize()
+            # enteros
+            else: 
+                return node[1]
+                
+        # Variables
         elif tag == "Ident":
             return node[1]
-        elif tag in {"Plus", "Minus", "Mult", "Less", "Greater", "Leq", "Geq", "Equal", "NotEqual", "And", "Or, Not"}:
+        # Operadores
+        elif tag in {"Plus", "Minus", "Mult", "Less", "Greater", "Leq", "Geq", "Equal", "NotEqual", "And", "Or", "Not"}:
+            # Binarios
             if len(node) == 4:
                 left = translate_expr(node[1])
                 right = translate_expr(node[2])
@@ -617,14 +623,15 @@ def translate_expr(node, isCondition=False):
                     "Less": "<", "Greater": ">", "Leq": "<=", "Geq": ">=",
                     "Equal": "==", "NotEqual": "!=", "And": "and", "Or": "or"
                 }[tag]
-                if isCondition:
-                    return f"({left} {op} {right})"
-                return f"{left}{op}{right}"
+                
+                return f"{left} {op} {right}"
+            # Unarios
             else:
                 child = translate_expr(node[1])
                 if isCondition:
                     return f"- {child}"
                 return f"-{child}"
+        # Asignacion a una funcion
         elif tag == "Comma":
             left = translate_expr(node[1])
             right = translate_expr(node[2])
@@ -634,6 +641,7 @@ def translate_expr(node, isCondition=False):
             if right != "":
                 result += [int(right)] if isinstance(right, str) else right
             return result
+        # Lectura de un valor de una funcion
         elif tag == "ReadFunction":
             ident = translate_expr(node[1])
             index = translate_expr(node[2])
@@ -642,40 +650,41 @@ def translate_expr(node, isCondition=False):
 
 def build_init_list(var_names):
     """
-    cons(0)(cons(0)...(nil))
+    Crear el estado inicial para el programa
     """
     code = "nil"
-    for key, value in var_names.items():
+    for _, value in var_names.items():
+        # Para las funciones
         if value[1] == "function":
             list = [] 
             for i in range(int(value[2])+1):
                 list.append(0)
             code = f"cons({list})({code})"
+        # Para los booleanos
         elif value[1] == "bool":        
             code = f"cons(False)({code})"
+        # Para los enteros
         else:
             code = f"cons(0)({code})"   
     return code
 
 def extract_symbols(ast):
     """
-    Extrae las variables declaradas del primer bloque.
+    Extrae las variables declaradas del bloque.
     """
     var_names = {}
     i = 1
     if isinstance(ast, tuple) and ast[0] == "Block":
         symbols_node = ast[1]
-        symbols_list = []
+
         if isinstance(symbols_node, tuple) and symbols_node[0] == "Symbols Table":
             table = symbols_node[1].symbols
             for name, type_ in table.items():
+                # Si la variable no es de tipo funcion, solo guardamos su correspondencia en lambda calculo y el tipo
                 if type_[0][0] != "function":
-                    
-                    symbols_list += [(name, type_[0])]
                     var_names[name] = (f"x{i}", type_[0] )
-
+                # Si la variable no es de tipo funcion, solo guardamos su correspondencia en lambda calculo y el tipo
                 else:
-                    symbols_list += [(name, type_[0][1])]
                     var_names[name] = (f"x{i}", type_[0][0], type_[0][1])
                 i += 1
                 
@@ -697,7 +706,7 @@ def translate_if(stmt, acc, var_names):
         branches.append((cond, body))
 
     # Encadenar cuerpos y condiciones
-    chain = "x1"  # valor por defecto si ninguna condición se cumple
+    chain = "x1"  
     for cond, body in reversed(branches):
         chain = f"({body} if {cond} else {chain})"
 
@@ -719,10 +728,12 @@ def translate_condition(cond, var_names):
     Traduce una condición booleana a la forma:
     apply(lambda xN: ... lambda x1: COND_EXPR)(x1)
     """
+
     cond_expr = translate_expr(cond, True)
-    # Replace variable names only if they are not part of 'and' or 'or' operators
+    # Reemplaza nombre de las variables
     for key, value in var_names.items():
         cond_expr = re.sub(rf'\b{re.escape(key)}\b', value[0], cond_expr)
+    
     lam_vars = ": lambda ".join(value[0] for _, value in reversed(var_names.items()))
     return f"(apply(lambda {lam_vars}: {cond_expr}))(x1)"
 
@@ -743,7 +754,7 @@ if __name__ == '__main__':
     parser = yacc.yacc()
     result = parser.parse(source_code, lexer=lexer)
 
-    # Si quieres ver el AST decorado:
+    # AST decorado:
     # print_ast(result)
 
     code = translate_to_lambda(result)
